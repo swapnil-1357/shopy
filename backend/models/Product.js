@@ -7,7 +7,9 @@ const productSchema = new mongoose.Schema({
     quantity: { type: Number, required: true },
     imageUrl: String,
     section: String, // e.g. "Electronics"
-    shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop' }
+    shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop' },
+    addedBy: { type: String, enum: ['owner', 'employee'], required: true },
+    addedByUsername: { type: String }
 })
 
 const Product = mongoose.model('Product', productSchema)

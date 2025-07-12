@@ -1,7 +1,8 @@
 import Shop from '../models/Shop.js'
 import Product from '../models/Product.js'
 import User from '../models/User.js'
-// Add section
+
+// Add section (Owner only)
 export const addSection = async (req, res) => {
     const { shopId, sectionName } = req.body
     try {
@@ -21,7 +22,7 @@ export const addSection = async (req, res) => {
     }
 }
 
-// Get sections
+// Get sections (any logged-in user)
 export const getSections = async (req, res) => {
     try {
         const shop = await Shop.findById(req.params.shopId)
@@ -32,11 +33,28 @@ export const getSections = async (req, res) => {
     }
 }
 
-// Add product
+// Add product (Owner or Employee)
 export const addProduct = async (req, res) => {
     const { shopId, section, name, description, price, quantity, imageUrl } = req.body
+    const user = req.user // from verifyToken middleware (should include user info)
+
     try {
-        const newProduct = new Product({ shopId, section, name, description, price, quantity, imageUrl })
+        if (!user || !shopId) {
+            return res.status(401).json({ message: 'Unauthorized' })
+        }
+
+        const newProduct = new Product({
+            shopId,
+            section,
+            name,
+            description,
+            price,
+            quantity,
+            imageUrl,
+            addedBy: user.role,
+            addedByUsername: user.username
+        })
+
         await newProduct.save()
         res.json({ message: 'Product added', product: newProduct })
     } catch (err) {
@@ -44,7 +62,7 @@ export const addProduct = async (req, res) => {
     }
 }
 
-// Get products by section
+// Get products by section (any logged-in user)
 export const getProductsBySection = async (req, res) => {
     const { shopId, section } = req.params
     try {
@@ -55,8 +73,7 @@ export const getProductsBySection = async (req, res) => {
     }
 }
 
-
-// Sell product
+// Sell product (Employee only)
 export const sellProduct = async (req, res) => {
     const { productId, employeeId, quantitySold } = req.body
 
@@ -96,7 +113,6 @@ export const sellProduct = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: err.message })
     }
 }
-
 
 // Restock product (Owner only)
 export const restockProduct = async (req, res) => {

@@ -1,32 +1,48 @@
-import User from '../models/User.js'
-import Product from '../models/Product.js'
+import PendingSale from '../models/PendingSale.js';
+import Product from '../models/Product.js';
+import User from '../models/User.js';
 
-export const getEmployeePerformance = async (req, res) => {
-    const { shopId } = req.params
+export const getShopAnalytics = async (req, res) => {
+    const { shopId } = req.params;
 
     try {
-        const employees = await User.find({ shopId, role: 'employee' }).populate('sales.product')
+        // Get all completed sales for the shop
+        const completedSales = await PendingSale.find({ shopId, status: 'completed' })
+            .populate('items.productId')
+            .populate('employeeId');
 
-        const performance = employees.map(emp => {
-            const totalSold = emp.sales.reduce((sum, sale) => sum + sale.quantity, 0)
+        let totalSales = completedSales.length;
+        let employeeStats = {};
+        let productStats = {};
 
-            return {
-                employeeId: emp._id,
-                username: emp.username,
-                totalSold,
-                sales: emp.sales.map(s => ({
-                    productName: s.product?.name || 'Deleted Product',
-                    quantity: s.quantity,
-                    date: s.date
-                }))
+        completedSales.forEach((sale) => {
+            const empId = sale.employeeId?._id?.toString();
+            const empName = sale.employeeId?.name || 'Unknown';
+
+            if (!employeeStats[empId]) {
+                employeeStats[empId] = { name: empName, salesCount: 0 };
             }
-        })
+            employeeStats[empId].salesCount += 1;
 
-        performance.sort((a, b) => b.totalSold - a.totalSold)
+            sale.items.forEach(({ productId, quantity }) => {
+                if (!productId) return;
+                const prodId = productId._id.toString();
+                if (!productStats[prodId]) {
+                    productStats[prodId] = {
+                        name: productId.name,
+                        totalSold: 0,
+                    };
+                }
+                productStats[prodId].totalSold += quantity;
+            });
+        });
 
-        res.json({ performance })
+        res.json({
+            totalSales,
+            employeeStats,
+            productStats,
+        });
     } catch (err) {
-        console.error('❌ Error in getEmployeePerformance:', err)
-        res.status(500).json({ message: 'Server error', error: err.message })
+        res.status(500).json({ message: 'Analytics fetch failed', error: err.message });
     }
-}
+};

@@ -1,8 +1,8 @@
-import express from 'express'
-import { getEmployeePerformance } from '../controllers/analyticsController.js'
+import express from 'express';
+import { getShopAnalytics } from '../controllers/analyticsController.js';
 
-const router = express.Router()
+const router = express.Router();
 
-router.get('/performance/:shopId', getEmployeePerformance)
+router.get('/shop/:shopId', getShopAnalytics);
 
-export default router
+export default router;

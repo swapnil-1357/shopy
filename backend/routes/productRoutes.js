@@ -14,10 +14,12 @@ const router = express.Router()
 
 // Owner-only routes
 router.post('/add-section', verifyToken, requireRole('owner'), addSection)
-router.post('/add-product', verifyToken, requireRole('owner'), addProduct)
 router.patch('/restock/:productId', verifyToken, requireRole('owner'), restockProduct)
 
-// Shared routes
+// Both owner and employee can add products now (no role check)
+router.post('/add-product', verifyToken, addProduct)
+
+// Shared routes (any logged-in user)
 router.get('/sections/:shopId', verifyToken, getSections)
 router.get('/products/:shopId/:section', verifyToken, getProductsBySection)
 

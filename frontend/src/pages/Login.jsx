@@ -1,9 +1,9 @@
-// src/pages/Login.jsx
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from '../lib/axios'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -12,42 +12,63 @@ const Login = () => {
         role: 'owner',
     })
 
+    const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
+    const { login, isAuthenticated, user } = useAuth()
+
+    // Fix: Add navigate to dependency array AND use the AuthContext
+    useEffect(() => {
+        if (isAuthenticated && user) {
+            navigate(user.role === 'owner' ? '/owner-dashboard' : '/employee-dashboard')
+        }
+    }, [isAuthenticated, user, navigate])
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value })
+        const { name, value } = e.target
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value.trimStart(),
+        }))
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        setLoading(true)
+
         try {
+            const payload = {
+                ...formData,
+                shopName: formData.shopName.trim().toLowerCase(),
+                username: formData.username.trim(),
+            }
+
             const endpoint =
                 formData.role === 'owner' ? '/auth/login-owner' : '/auth/login-employee'
 
-            const res = await axios.post(endpoint, formData)
+            const res = await axios.post(endpoint, payload)
             const { token, user } = res.data
 
-            // ✅ Save to localStorage
-            localStorage.setItem('token', token)
-            localStorage.setItem('user', JSON.stringify(user))
+            // Use AuthContext login method instead of direct localStorage
+            login(user, token)
 
-            alert('Login successful')
-
-            // ✅ Navigate based on role
-            if (user.role === 'owner') {
-                navigate('/owner-dashboard')
-            } else {
-                navigate('/employee-dashboard')
-            }
+            alert('✅ Login successful')
+            navigate(user.role === 'owner' ? '/owner-dashboard' : '/employee-dashboard')
         } catch (err) {
-            alert(err.response?.data?.message || 'Login failed')
+            const status = err.response?.status
+            const message = err.response?.data?.message || 'Login failed'
+
+            if (status === 400) alert(`⚠️ ${message}`)
+            else if (status === 401 || status === 403) alert('❌ Invalid credentials')
+            else if (status === 404) alert('❌ Shop or user not found')
+            else alert(`❌ ${message}`)
+        } finally {
+            setLoading(false)
         }
     }
 
     return (
         <div className="max-w-md mx-auto mt-20 p-6 border rounded-xl shadow">
             <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
-
             <form onSubmit={handleSubmit} className="space-y-4">
                 <Input
                     name="shopName"
@@ -61,7 +82,6 @@ const Login = () => {
                     value={formData.username}
                     onChange={handleChange}
                 />
-
                 <select
                     name="role"
                     value={formData.role}
@@ -71,11 +91,18 @@ const Login = () => {
                     <option value="owner">Owner</option>
                     <option value="employee">Employee</option>
                 </select>
-
-                <Button type="submit" className="w-full">
-                    Log In
+                <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? 'Logging in...' : 'Log In'}
                 </Button>
             </form>
+
+            {/* Sign up link */}
+            <p className="text-center mt-4 text-sm text-muted-foreground">
+                New user?{' '}
+                <Link to="/signup" className="text-blue-600 hover:underline font-medium">
+                    Sign up here
+                </Link>
+            </p>
         </div>
     )
 }

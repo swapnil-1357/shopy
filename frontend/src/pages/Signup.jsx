@@ -12,23 +12,52 @@ const Signup = () => {
         role: 'owner',
     })
 
+    const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value })
+        const { name, value } = e.target
+        setFormData(prev => ({
+            ...prev,
+            [name]: value.trimStart(),
+        }))
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        try {
-            const endpoint =
-                formData.role === 'owner' ? '/auth/register-owner' : '/auth/register-employee'
+        setLoading(true)
 
-            const res = await axios.post(endpoint, formData)
-            alert('Signup successful!')
+        try {
+            const payload = {
+                ...formData,
+                shopName: formData.shopName.trim().toLowerCase(),
+                username: formData.username.trim(),
+            }
+
+            const endpoint =
+                formData.role === 'owner'
+                    ? '/auth/register-owner'
+                    : '/auth/register-employee'
+
+            await axios.post(endpoint, payload)
+
+            alert('✅ Signup successful!')
             navigate('/login')
         } catch (err) {
-            alert(err.response?.data?.message || 'Signup failed')
+            const status = err.response?.status
+            const message = err.response?.data?.message || 'Signup failed'
+
+            if (status === 400) {
+                alert(`⚠️ ${message}`)
+            } else if (status === 403) {
+                alert('❌ Invalid shop or password')
+            } else if (status === 404) {
+                alert('❌ Shop not found')
+            } else {
+                alert(`❌ ${message}`)
+            }
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -51,7 +80,11 @@ const Signup = () => {
                 />
                 <Input
                     name="employeePassword"
-                    placeholder={formData.role === 'owner' ? 'Set Employee Password' : 'Employee Password'}
+                    placeholder={
+                        formData.role === 'owner'
+                            ? 'Set Employee Password'
+                            : 'Employee Password'
+                    }
                     value={formData.employeePassword}
                     onChange={handleChange}
                 />
@@ -66,7 +99,13 @@ const Signup = () => {
                     <option value="employee">Employee</option>
                 </select>
 
-                <Button type="submit" className="w-full">Sign Up</Button>
+                <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={loading}
+                >
+                    {loading ? 'Signing up...' : 'Sign Up'}
+                </Button>
             </form>
         </div>
     )
