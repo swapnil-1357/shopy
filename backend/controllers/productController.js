@@ -119,7 +119,7 @@ export const restockProduct = async (req, res) => {
     const { productId } = req.params
     const { quantity } = req.body
 
-    if (!quantity || quantity <= 0) {
+    if (typeof quantity !== 'number' || quantity === 0) {
         return res.status(400).json({ message: 'Invalid quantity' })
     }
 
@@ -127,10 +127,15 @@ export const restockProduct = async (req, res) => {
         const product = await Product.findById(productId)
         if (!product) return res.status(404).json({ message: 'Product not found' })
 
-        product.quantity += quantity
+        const newQuantity = product.quantity + quantity
+        if (newQuantity < 0) {
+            return res.status(400).json({ message: 'Stock cannot be negative' })
+        }
+
+        product.quantity = newQuantity
         await product.save()
 
-        res.json({ message: 'Product restocked', updatedQuantity: product.quantity })
+        res.json({ message: 'Product stock updated', updatedQuantity: product.quantity })
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message })
     }
