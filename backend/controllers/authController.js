@@ -107,20 +107,35 @@ export const loginOwner = async (req, res) => {
 }
 
 export const loginEmployee = async (req, res) => {
-    const { shopName, username } = req.body
+    const { shopName, username, employeePassword } = req.body;
+
+    if (!shopName || !username || !employeePassword) {
+        return res.status(400).json({ message: 'All fields are required: shopName, username, and password' });
+    }
 
     try {
-        const shop = await Shop.findOne({ name: shopName })
-        if (!shop) return res.status(404).json({ message: 'Shop not found' })
+        const shop = await Shop.findOne({ name: shopName });
+        if (!shop) return res.status(404).json({ message: 'Shop not found' });
 
-        const user = await User.findOne({ username, role: 'employee', shopId: shop._id })
-        if (!user) return res.status(404).json({ message: 'Employee not found' })
+        // ✅ Double-check shop has a stored employeePassword
+        if (!shop.employeePassword) {
+            console.warn("⚠️ Shop has no stored employeePassword");
+            return res.status(500).json({ message: 'Shop password not configured' });
+        }
 
-        const token = generateToken(user)
-        res.status(200).json({ token, user })
+        const isMatch = await bcrypt.compare(employeePassword, shop.employeePassword);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid password' });
+        }
+
+        const user = await User.findOne({ username, role: 'employee', shopId: shop._id });
+        if (!user) return res.status(404).json({ message: 'Employee not found' });
+
+        const token = generateToken(user);
+        res.status(200).json({ token, user });
 
     } catch (err) {
-        console.error("❌ loginEmployee error:", err.message)
-        res.status(500).json({ error: err.message })
+        console.error("❌ loginEmployee error:", err.message);
+        res.status(500).json({ error: err.message });
     }
-}
+};

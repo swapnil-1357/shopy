@@ -5,6 +5,7 @@ import axios from '../lib/axios'
 import Navbar from '@/components/Navbar'
 import AddSectionModal from '@/components/AddSectionModal'
 import AddProductModal from '@/components/AddProductModal'
+import instance from '../lib/axios'
 
 const Loader = () => (
     <div className="flex justify-center items-center py-8">
@@ -162,14 +163,13 @@ const OwnerDashboard = () => {
         if (!confirmed) return;
 
         try {
-            const response = await axios.delete(
-                `http://localhost:5000/api/products/delete/${productId}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
-                }
-            );
+            const token = localStorage.getItem('token');
+
+            const response = await instance.delete(`/products/delete/${productId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
             alert('✅ Product deleted successfully');
             fetchProducts(selectedSection); // Refresh product list

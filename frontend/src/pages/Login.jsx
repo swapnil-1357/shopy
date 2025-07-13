@@ -9,7 +9,7 @@ const Login = () => {
     const [formData, setFormData] = useState({
         shopName: '',
         username: '',
-        password: '', // Add password to formData
+        password: '', // used for both employeePassword or ownerPassword
         role: 'owner',
     })
 
@@ -17,7 +17,6 @@ const Login = () => {
     const navigate = useNavigate()
     const { login, isAuthenticated, user } = useAuth()
 
-    // Fix: Add navigate to dependency array AND use the AuthContext
     useEffect(() => {
         if (isAuthenticated && user) {
             navigate(user.role === 'owner' ? '/owner-dashboard' : '/employee-dashboard')
@@ -38,9 +37,11 @@ const Login = () => {
 
         try {
             const payload = {
-                ...formData,
                 shopName: formData.shopName.trim().toLowerCase(),
                 username: formData.username.trim(),
+                ...(formData.role === 'employee'
+                    ? { employeePassword: formData.password }
+                    : { ownerPassword: formData.password }),
             }
 
             const endpoint =
@@ -49,9 +50,7 @@ const Login = () => {
             const res = await axios.post(endpoint, payload)
             const { token, user } = res.data
 
-            // Use AuthContext login method instead of direct localStorage
             login(user, token)
-
             alert('✅ Login successful')
             navigate(user.role === 'owner' ? '/owner-dashboard' : '/employee-dashboard')
         } catch (err) {
@@ -104,7 +103,6 @@ const Login = () => {
                 </Button>
             </form>
 
-            {/* Sign up link */}
             <p className="text-center mt-4 text-sm text-muted-foreground">
                 New user?{' '}
                 <Link to="/signup" className="text-blue-600 hover:underline font-medium">
