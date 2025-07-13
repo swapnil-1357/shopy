@@ -5,7 +5,6 @@ import axios from '../lib/axios'
 import Navbar from '@/components/Navbar'
 import AddSectionModal from '@/components/AddSectionModal'
 import AddProductModal from '@/components/AddProductModal'
-import instance from '../lib/axios'
 
 const Loader = () => (
     <div className="flex justify-center items-center py-8">
@@ -150,35 +149,6 @@ const OwnerDashboard = () => {
             alert('Failed to delete')
         }
     }
-
-    const handleDeleteProduct = async (productId, productName) => {
-        if (!productId) {
-            alert('Invalid product ID');
-            return;
-        }
-
-        const confirmed = window.confirm(
-            `Are you sure you want to delete "${productName}"? This action cannot be undone.`
-        );
-        if (!confirmed) return;
-
-        try {
-            const token = localStorage.getItem('token');
-
-            const response = await instance.delete(`/products/delete/${productId}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            alert('✅ Product deleted successfully');
-            fetchProducts(selectedSection); // Refresh product list
-        } catch (err) {
-            console.error("❌ Delete error:", err);
-            alert(err.response?.data?.message || 'Failed to delete product');
-        }
-    };
-
 
     const handleAddSection = async (sectionName) => {
         if (!sectionName.trim()) return alert('Section name cannot be empty')
@@ -325,12 +295,13 @@ const OwnerDashboard = () => {
                     </div>
                 </section>
 
+
+
                 {/* Products */}
                 <section>
                     <h2 className="text-2xl font-semibold mb-6 text-center">
                         Products in "{selectedSection || 'Select a section'}"
                     </h2>
-
                     {loadingProducts ? (
                         <Loader />
                     ) : filteredProducts.length === 0 ? (
@@ -340,27 +311,8 @@ const OwnerDashboard = () => {
                             {filteredProducts.map(({ _id, name, description, price, quantity, imageUrl }) => (
                                 <div
                                     key={_id}
-                                    className="border rounded-lg shadow-md p-4 flex flex-col relative"
+                                    className="border rounded-lg shadow-md p-4 flex flex-col"
                                 >
-                                    {/* Delete icon button (top-right) */}
-                                    <button
-                                        onClick={() => handleDeleteProduct(_id, name)}
-                                        className="absolute bottom-2 right-2 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full p-1 transition-colors duration-200"
-                                        title={`Delete "${name}"`}
-                                        aria-label={`Delete ${name}`}
-                                    >
-                                        <svg
-                                            className="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-
-                                    {/* Product image */}
                                     <div
                                         className="cursor-pointer mb-4 h-48 overflow-hidden rounded"
                                         onClick={() => setModalImage(imageUrl)}
@@ -377,33 +329,28 @@ const OwnerDashboard = () => {
                                             </div>
                                         )}
                                     </div>
-
-                                    {/* Product info */}
                                     <h3 className="font-semibold text-lg">{name}</h3>
-                                    <p className="text-gray-600 flex-grow">{description || 'No description'}</p>
+                                    <p className="text-gray-600 flex-grow">
+                                        {description || 'No description'}
+                                    </p>
                                     <p className="mt-2 font-medium">${price.toFixed(2)}</p>
                                     <p className="text-sm text-gray-700">Quantity: {quantity}</p>
-
-                                    {/* Actions */}
-                                    <div className="flex justify-between mt-3 text-sm">
-                                        <button
-                                            onClick={() => {
-                                                setStockProductId(_id);
-                                                setShowStockModal(true);
-                                                setStockChange('');
-                                                setCurrentStock(quantity);
-                                            }}
-                                            className="text-blue-600 hover:underline"
-                                        >
-                                            Update Stock
-                                        </button>
-                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setStockProductId(_id)
+                                            setShowStockModal(true)
+                                            setStockChange('')
+                                            setCurrentStock(quantity)
+                                        }}
+                                        className="mt-3 text-blue-600 hover:underline self-start"
+                                    >
+                                        Update Stock
+                                    </button>
                                 </div>
                             ))}
                         </div>
                     )}
                 </section>
-
 
                 {/* Pending Sales Modal */}
                 {showPendingSalesModal && (
@@ -455,7 +402,7 @@ const OwnerDashboard = () => {
                                                 </p>
                                             </div>
                                             <button
-                                                className="relative text-sm text-red-600 hover:underline"
+                                                className="text-sm text-red-600 hover:underline"
                                                 onClick={() => handleDeletePending(sale.saleId)}
                                             >
                                                 Delete

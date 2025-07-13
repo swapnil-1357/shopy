@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import axios from '@/lib/axios'
@@ -8,15 +8,26 @@ import Navbar from '@/components/Navbar'
 const EmployeeDashboard = () => {
     const { user, logout } = useAuth()
     const navigate = useNavigate()
+    const cartRef = useRef(null)
+
     const [sections, setSections] = useState([])
     const [selectedSection, setSelectedSection] = useState('')
     const [products, setProducts] = useState([])
-    const [cart, setCart] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [priceFilter, setPriceFilter] = useState('')
     const [quantityFilter, setQuantityFilter] = useState('')
 
+    const [cart, setCart] = useState(() => {
+        const saved = localStorage.getItem('employee_cart')
+        return saved ? JSON.parse(saved) : []
+    })
+
+    useEffect(() => {
+        localStorage.setItem('employee_cart', JSON.stringify(cart))
+    }, [cart])
+
     const handleLogout = () => {
+        localStorage.removeItem('employee_cart')
         logout()
         navigate('/login')
     }
@@ -38,7 +49,7 @@ const EmployeeDashboard = () => {
                 setSelectedSection(fetchedSections[0])
                 fetchProducts(fetchedSections[0])
             }
-        } catch (err) {
+        } catch {
             alert('Failed to load sections')
         }
     }
@@ -49,16 +60,16 @@ const EmployeeDashboard = () => {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             })
             setProducts(res.data)
-        } catch (err) {
+        } catch {
             alert('Failed to load products')
         }
     }
 
     const addToCart = (product) => {
-        setCart((prev) => {
-            const existing = prev.find((item) => item._id === product._id)
+        setCart(prev => {
+            const existing = prev.find(item => item._id === product._id)
             if (existing) {
-                return prev.map((item) =>
+                return prev.map(item =>
                     item._id === product._id
                         ? { ...item, quantity: item.quantity + 1 }
                         : item
@@ -69,7 +80,25 @@ const EmployeeDashboard = () => {
     }
 
     const removeFromCart = (productId) => {
-        setCart((prev) => prev.filter((item) => item._id !== productId))
+        setCart(prev => prev.filter(item => item._id !== productId))
+    }
+
+    const incrementQuantity = (productId) => {
+        setCart(prevCart =>
+            prevCart.map(item =>
+                item._id === productId ? { ...item, quantity: item.quantity + 1 } : item
+            )
+        )
+    }
+
+    const decrementQuantity = (productId) => {
+        setCart(prevCart =>
+            prevCart.map(item =>
+                item._id === productId && item.quantity > 1
+                    ? { ...item, quantity: item.quantity - 1 }
+                    : item
+            )
+        )
     }
 
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0)
@@ -82,7 +111,7 @@ const EmployeeDashboard = () => {
             const payload = {
                 employeeId: user._id,
                 shopId: user.shopId,
-                items: cart.map((item) => ({
+                items: cart.map(item => ({
                     productId: item._id,
                     quantity: item.quantity,
                 })),
@@ -94,7 +123,8 @@ const EmployeeDashboard = () => {
 
             alert('Sale request submitted successfully ✅')
             setCart([])
-            fetchProducts(selectedSection) // Refresh stock
+            localStorage.removeItem('employee_cart')
+            fetchProducts(selectedSection)
         } catch (err) {
             const msg = err.response?.data?.message || 'Failed to place sale'
             alert(msg)
@@ -106,23 +136,33 @@ const EmployeeDashboard = () => {
     return (
         <div>
             <Navbar
-                appName="Shopy"
+                role="employee"
+                cart={cart}
+                cartCount={totalItems}
                 onAnalytics={() => navigate('/analytics')}
                 onPendingCart={() => navigate('/pending-sales')}
                 onLogout={handleLogout}
+                onCartUpdate={(productId, action) => {
+                    if (action === 'increment') incrementQuantity(productId)
+                    else if (action === 'decrement') decrementQuantity(productId)
+                    else if (action === 'remove') removeFromCart(productId)
+                }}
+                onCartSubmit={placePendingSale}
             />
+
+
             <div className="p-6 max-w-6xl mx-auto">
                 <h1 className="text-2xl font-bold mb-6">Welcome, {user.username}</h1>
-                {/* Section Dropdown, Search Bar, Filters */}
+
+                {/* Filters */}
                 <div className="flex items-center mb-6 gap-4">
-                    {/* Left: Section Dropdown */}
                     <div className="flex items-center flex-1">
                         <select
                             className="border-2 border-blue-700 px-4 py-2 rounded-lg font-semibold text-blue-700 bg-white shadow focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                             value={selectedSection}
                             onChange={e => {
-                                setSelectedSection(e.target.value);
-                                fetchProducts(e.target.value);
+                                setSelectedSection(e.target.value)
+                                fetchProducts(e.target.value)
                             }}
                         >
                             <option value="">All Sections</option>
@@ -131,7 +171,7 @@ const EmployeeDashboard = () => {
                             ))}
                         </select>
                     </div>
-                    {/* Middle: Search Bar (centered, 40% width) */}
+
                     <div className="flex justify-center flex-1">
                         <div className="flex items-center w-[40vw] max-w-xl mx-auto">
                             <input
@@ -148,7 +188,7 @@ const EmployeeDashboard = () => {
                                 </svg>
                             </span>
                         </div>
-                        {/* Price Filter */}
+
                         <input
                             type="number"
                             className="border px-3 py-2 rounded w-24 focus:outline-none ml-2"
@@ -157,7 +197,6 @@ const EmployeeDashboard = () => {
                             onChange={e => setPriceFilter(e.target.value)}
                             min={0}
                         />
-                        {/* Quantity Filter */}
                         <input
                             type="number"
                             className="border px-3 py-2 rounded w-24 focus:outline-none ml-2"
@@ -177,7 +216,7 @@ const EmployeeDashboard = () => {
                             (priceFilter ? product.price <= Number(priceFilter) : true) &&
                             (quantityFilter ? product.quantity >= Number(quantityFilter) : true)
                         )
-                        .map((product) => (
+                        .map(product => (
                             <div
                                 key={product._id}
                                 className="border p-4 rounded shadow hover:shadow-lg transition"
@@ -203,21 +242,47 @@ const EmployeeDashboard = () => {
                 </div>
 
                 {/* Cart Section */}
-                <div className="mt-10 border-t pt-6">
+                {/* <div className="mt-10 border-t pt-6" ref={cartRef} id="cart-section">
                     <h2 className="text-xl font-bold mb-4">🛒 Your Cart</h2>
+
                     {cart.length === 0 ? (
                         <p className="text-muted-foreground">No items in cart</p>
                     ) : (
                         <>
-                            <ul className="space-y-3">
-                                {cart.map((item) => (
+                            <ul className="space-y-4">
+                                {cart.map(item => (
                                     <li
                                         key={item._id}
-                                        className="flex justify-between items-center border px-4 py-2 rounded"
+                                        className="flex items-center justify-between border rounded-lg p-4 shadow-sm"
                                     >
-                                        <div>
-                                            <strong>{item.name}</strong> × {item.quantity} = ₹
-                                            {item.quantity * item.price}
+                                        <div className="flex items-center space-x-4">
+                                            <img
+                                                src={item.imageUrl || 'https://via.placeholder.com/64?text=Item'}
+                                                alt={item.name}
+                                                className="w-16 h-16 object-cover rounded-md border"
+                                            />
+                                            <div>
+                                                <h3 className="font-semibold">{item.name}</h3>
+                                                <p className="text-sm text-gray-600">
+                                                    ₹{item.price} × {item.quantity} = ₹{item.price * item.quantity}
+                                                </p>
+                                                <div className="flex items-center space-x-2 mt-2">
+                                                    <button
+                                                        onClick={() => decrementQuantity(item._id)}
+                                                        className="px-2 py-1 border rounded hover:bg-gray-100"
+                                                        disabled={item.quantity <= 1}
+                                                    >
+                                                        –
+                                                    </button>
+                                                    <span className="px-2">{item.quantity}</span>
+                                                    <button
+                                                        onClick={() => incrementQuantity(item._id)}
+                                                        className="px-2 py-1 border rounded hover:bg-gray-100"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                         <button
                                             onClick={() => removeFromCart(item._id)}
@@ -228,16 +293,17 @@ const EmployeeDashboard = () => {
                                     </li>
                                 ))}
                             </ul>
-                            <div className="mt-4 text-right">
-                                <p className="font-medium">Total Items: {totalItems}</p>
-                                <p className="font-medium">Total Price: ₹{totalPrice}</p>
+
+                            <div className="mt-6 border-t pt-4 text-right space-y-1">
+                                <p className="font-medium">🧾 Total Items: {totalItems}</p>
+                                <p className="font-semibold text-lg">💰 Total Price: ₹{totalPrice}</p>
                                 <Button className="mt-2" onClick={placePendingSale}>
                                     Submit Sale Request
                                 </Button>
                             </div>
                         </>
                     )}
-                </div>
+                </div> */}
             </div>
         </div>
     )
