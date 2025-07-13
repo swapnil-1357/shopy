@@ -73,6 +73,44 @@ export const getProductsBySection = async (req, res) => {
     }
 }
 
+// Delete product (Owner only)
+export const deleteProduct = async (req, res) => {
+    const { productId } = req.params;
+    const user = req.user;
+
+    console.log("📦 DELETE /delete/:productId =>", productId);
+    console.log("👤 User info:", user);
+
+    try {
+        const product = await Product.findById(productId);
+        console.log("🔍 Fetched product:", product);
+
+        if (!product) {
+            console.warn("❌ Product not found");
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        if (!user || !user.shopId) {
+            console.error("❌ Invalid user or missing shopId");
+            return res.status(401).json({ message: 'Unauthorized: Missing user/shop info' });
+        }
+
+        if (product.shopId.toString() !== user.shopId.toString()) {
+            console.warn("🚫 Unauthorized delete attempt by user:", user.username);
+            return res.status(403).json({ message: 'Unauthorized: Product does not belong to your shop' });
+        }
+
+        await Product.findByIdAndDelete(productId);
+        console.log("✅ Product deleted successfully");
+
+        res.json({ message: 'Product deleted successfully' });
+    } catch (err) {
+        console.error('❌ Server error in deleteProduct:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
+
+
 // Sell product (Employee only)
 export const sellProduct = async (req, res) => {
     const { productId, employeeId, quantitySold } = req.body

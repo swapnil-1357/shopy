@@ -9,6 +9,7 @@ const Login = () => {
     const [formData, setFormData] = useState({
         shopName: '',
         username: '',
+        password: '', // Add password to formData
         role: 'owner',
     })
 
@@ -80,6 +81,13 @@ const Login = () => {
                     name="username"
                     placeholder="Username"
                     value={formData.username}
+                    onChange={handleChange}
+                />
+                <Input
+                    name="password"
+                    type="password"
+                    placeholder={formData.role === 'owner' ? 'Owner Password' : 'Employee Password'}
+                    value={formData.password}
                     onChange={handleChange}
                 />
                 <select

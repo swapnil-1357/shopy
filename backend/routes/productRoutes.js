@@ -5,7 +5,8 @@ import {
     addProduct,
     getProductsBySection,
     sellProduct,
-    restockProduct
+    restockProduct,
+    deleteProduct
 } from '../controllers/productController.js'
 
 import { verifyToken, requireRole } from '../middleware/authMiddleware.js'
@@ -15,6 +16,7 @@ const router = express.Router()
 // Owner-only routes
 router.post('/add-section', verifyToken, requireRole('owner'), addSection)
 router.patch('/restock/:productId', verifyToken, requireRole('owner'), restockProduct)
+router.delete('/delete/:productId', verifyToken, requireRole('owner'), deleteProduct)
 
 // Both owner and employee can add products now (no role check)
 router.post('/add-product', verifyToken, addProduct)
