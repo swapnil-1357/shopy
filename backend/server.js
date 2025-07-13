@@ -12,8 +12,12 @@ dotenv.config()
 
 const app = express()
 
-// Middleware
-app.use(cors())
+// CORS for frontend on Vercel
+app.use(cors({
+    origin: ['http://localhost:5173', 'https://shopy-roan.vercel.app'],
+    credentials: true,
+}))
+
 app.use(express.json())
 
 // Routes
@@ -26,10 +30,7 @@ const PORT = process.env.PORT || 5000
 
 const startServer = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        })
+        await mongoose.connect(process.env.MONGO_URI)
         console.log('✅ MongoDB connected successfully')
 
         app.listen(PORT, () => {
