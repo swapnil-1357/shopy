@@ -3,7 +3,7 @@ import User from '../models/User.js'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 
-// Token generator
+// 🔐 JWT Token Generator
 const generateToken = (user) => {
     if (!user || !user._id || !user.role) {
         throw new Error("User info missing while generating token")
@@ -15,20 +15,28 @@ const generateToken = (user) => {
     )
 }
 
-// Owner Registration
+// ✅ Owner Registration (Requires OWNER_SECRET)
 export const registerOwner = async (req, res) => {
-    const { shopName, employeePassword, username } = req.body
+    const { shopName, employeePassword, username, ownerSecret } = req.body
 
     try {
-        if (!shopName || !employeePassword || !username) {
+        // Validate input
+        if (!shopName || !employeePassword || !username || !ownerSecret) {
             return res.status(400).json({ message: 'All fields are required' })
         }
 
+        // Check secret key
+        if (ownerSecret !== process.env.OWNER_SECRET) {
+            return res.status(403).json({ message: 'Unauthorized to register as owner' })
+        }
+
+        // Check if shop exists
         const existingShop = await Shop.findOne({ name: shopName })
         if (existingShop) {
             return res.status(400).json({ message: 'Shop already exists' })
         }
 
+        // Create shop and owner user
         const hashedPassword = await bcrypt.hash(employeePassword, 10)
         const shop = await Shop.create({ name: shopName, employeePassword: hashedPassword })
 
@@ -40,14 +48,13 @@ export const registerOwner = async (req, res) => {
 
         const token = generateToken(user)
         res.status(201).json({ token, user })
-
     } catch (err) {
         console.error("❌ registerOwner error:", err.message)
         res.status(500).json({ error: err.message })
     }
 }
 
-// Employee Registration
+// ✅ Employee Registration
 export const registerEmployee = async (req, res) => {
     const { shopName, employeePassword, username } = req.body
 
@@ -79,14 +86,13 @@ export const registerEmployee = async (req, res) => {
 
         const token = generateToken(user)
         res.status(201).json({ token, user })
-
     } catch (err) {
         console.error("❌ registerEmployee error:", err.message)
         res.status(500).json({ error: err.message })
     }
 }
 
-// Login functions remain unchanged
+// ✅ Owner Login
 export const loginOwner = async (req, res) => {
     const { shopName, username } = req.body
 
@@ -99,43 +105,41 @@ export const loginOwner = async (req, res) => {
 
         const token = generateToken(user)
         res.status(200).json({ token, user })
-
     } catch (err) {
         console.error("❌ loginOwner error:", err.message)
         res.status(500).json({ error: err.message })
     }
 }
 
+// ✅ Employee Login
 export const loginEmployee = async (req, res) => {
-    const { shopName, username, employeePassword } = req.body;
+    const { shopName, username, employeePassword } = req.body
 
     if (!shopName || !username || !employeePassword) {
-        return res.status(400).json({ message: 'All fields are required: shopName, username, and password' });
+        return res.status(400).json({ message: 'All fields are required: shopName, username, and password' })
     }
 
     try {
-        const shop = await Shop.findOne({ name: shopName });
-        if (!shop) return res.status(404).json({ message: 'Shop not found' });
+        const shop = await Shop.findOne({ name: shopName })
+        if (!shop) return res.status(404).json({ message: 'Shop not found' })
 
-        // ✅ Double-check shop has a stored employeePassword
         if (!shop.employeePassword) {
-            console.warn("⚠️ Shop has no stored employeePassword");
-            return res.status(500).json({ message: 'Shop password not configured' });
+            console.warn("⚠️ Shop has no stored employeePassword")
+            return res.status(500).json({ message: 'Shop password not configured' })
         }
 
-        const isMatch = await bcrypt.compare(employeePassword, shop.employeePassword);
+        const isMatch = await bcrypt.compare(employeePassword, shop.employeePassword)
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid password' });
+            return res.status(401).json({ message: 'Invalid password' })
         }
 
-        const user = await User.findOne({ username, role: 'employee', shopId: shop._id });
-        if (!user) return res.status(404).json({ message: 'Employee not found' });
+        const user = await User.findOne({ username, role: 'employee', shopId: shop._id })
+        if (!user) return res.status(404).json({ message: 'Employee not found' })
 
-        const token = generateToken(user);
-        res.status(200).json({ token, user });
-
+        const token = generateToken(user)
+        res.status(200).json({ token, user })
     } catch (err) {
-        console.error("❌ loginEmployee error:", err.message);
-        res.status(500).json({ error: err.message });
+        console.error("❌ loginEmployee error:", err.message)
+        res.status(500).json({ error: err.message })
     }
-};
+}

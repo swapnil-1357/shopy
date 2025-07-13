@@ -1,3 +1,5 @@
+// src/pages/Signup.jsx
+
 import React, { useState } from 'react'
 import axios from '../lib/axios'
 import { Input } from '@/components/ui/input'
@@ -9,7 +11,8 @@ const Signup = () => {
         shopName: '',
         username: '',
         employeePassword: '',
-        role: 'owner',
+        ownerSecret: '',
+        role: 'employee', // Default to employee
     })
 
     const [loading, setLoading] = useState(false)
@@ -29,9 +32,13 @@ const Signup = () => {
 
         try {
             const payload = {
-                ...formData,
                 shopName: formData.shopName.trim().toLowerCase(),
                 username: formData.username.trim(),
+                employeePassword: formData.employeePassword,
+            }
+
+            if (formData.role === 'owner') {
+                payload.ownerSecret = formData.ownerSecret.trim()
             }
 
             const endpoint =
@@ -47,12 +54,8 @@ const Signup = () => {
             const status = err.response?.status
             const message = err.response?.data?.message || 'Signup failed'
 
-            if (status === 400) {
+            if (status === 400 || status === 403 || status === 404) {
                 alert(`⚠️ ${message}`)
-            } else if (status === 403) {
-                alert('❌ Invalid shop or password')
-            } else if (status === 404) {
-                alert('❌ Shop not found')
             } else {
                 alert(`❌ ${message}`)
             }
@@ -87,7 +90,18 @@ const Signup = () => {
                     }
                     value={formData.employeePassword}
                     onChange={handleChange}
+                    type="password"
                 />
+
+                {formData.role === 'owner' && (
+                    <Input
+                        name="ownerSecret"
+                        placeholder="Owner Secret Key"
+                        value={formData.ownerSecret}
+                        onChange={handleChange}
+                        type="password"
+                    />
+                )}
 
                 <select
                     name="role"
@@ -108,7 +122,6 @@ const Signup = () => {
                 </Button>
             </form>
 
-            {/* Login link */}
             <p className="text-center mt-4 text-sm text-muted-foreground">
                 Already have an account?{' '}
                 <a href="/login" className="text-blue-600 hover:underline font-medium">
