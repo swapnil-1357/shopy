@@ -2,10 +2,15 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import axios from '../lib/axios'
-import { Oval } from 'react-loader-spinner'
 import Navbar from '@/components/Navbar'
 import AddSectionModal from '@/components/AddSectionModal'
 import AddProductModal from '@/components/AddProductModal'
+
+const Loader = () => (
+    <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-700"></div>
+    </div>
+);
 
 const OwnerDashboard = () => {
     const { user, logout } = useAuth()
@@ -277,7 +282,7 @@ const OwnerDashboard = () => {
                         </div>
                     </div>
                     {loadingSections ? (
-                        <Oval height={40} width={40} color="#4f46e5" secondaryColor="#c7d2fe" />
+                        <Loader />
                     ) : null}
                 </section>
 
@@ -298,7 +303,7 @@ const OwnerDashboard = () => {
                         Products in "{selectedSection || 'Select a section'}"
                     </h2>
                     {loadingProducts ? (
-                        <Oval height={40} width={40} color="#4f46e5" secondaryColor="#c7d2fe" />
+                        <Loader />
                     ) : filteredProducts.length === 0 ? (
                         <p className="text-center">No products found in this section.</p>
                     ) : (
@@ -368,12 +373,7 @@ const OwnerDashboard = () => {
                                 &times;
                             </button>
                             {loadingPending ? (
-                                <Oval
-                                    height={40}
-                                    width={40}
-                                    color="#4f46e5"
-                                    secondaryColor="#c7d2fe"
-                                />
+                                <Loader />
                             ) : pendingSales.length === 0 ? (
                                 <p>No pending sales.</p>
                             ) : (
