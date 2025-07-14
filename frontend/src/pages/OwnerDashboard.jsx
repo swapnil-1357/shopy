@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner" 
+import api from '@/lib/axios' 
 
 const Loader = () => (
     <div className="flex justify-center items-center py-8">
@@ -93,25 +94,17 @@ const OwnerDashboard = () => {
 
     const handleDeleteProduct = async (productId) => {
         try {
-            const res = await fetch(`/api/products/delete/${productId}`, {
-                method: "DELETE",
+            const res = await api.delete(`/products/delete/${productId}`, {
                 headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("token")}`, // or however you store auth
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
             })
 
-            const data = await res.json()
-
-            if (!res.ok) throw new Error(data.message || "Failed to delete product")
-
-            // Update local state (adjust based on how your state is structured)
             setProducts(prev => prev.filter(p => p._id !== productId))
-
-            toast.success(data.message || "Product deleted")
+            toast.success(res.data.message || 'Product deleted')
         } catch (err) {
-            console.error("❌ Delete error:", err)
-            toast.error(err.message || "Failed to delete product")
+            console.error('❌ Delete error:', err)
+            toast.error(err.response?.data?.message || 'Failed to delete product')
         }
     }
     const fetchProducts = async (section) => {

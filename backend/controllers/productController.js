@@ -1,7 +1,7 @@
 import Shop from '../models/Shop.js'
 import Product from '../models/Product.js'
 import User from '../models/User.js'
-
+import api from '@/utils/apiClient'
 // Add section (Owner only)
 export const addSection = async (req, res) => {
     const { shopId, sectionName } = req.body
