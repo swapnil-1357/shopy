@@ -17,8 +17,9 @@ export const getShopAnalytics = async (req, res) => {
                 products: [],
                 employeeProductSales: [],
                 topEmployees: [],
-                topProduct: null,
-                topEmployee: null
+                topProduct: [],
+                topProductIds: [],    // ✅ Include in empty state too
+                topEmployee: []
             })
         }
 
@@ -50,7 +51,7 @@ export const getShopAnalytics = async (req, res) => {
                 const empId = sale.employeeId?._id?.toString()
                 if (!empId) return
 
-                // Build employeeProductSales map
+                // Employee Product Sales Map
                 if (!employeeMap.has(empId)) {
                     employeeMap.set(empId, {
                         _id: empId,
@@ -67,7 +68,7 @@ export const getShopAnalytics = async (req, res) => {
                 }
                 empData.products[prodId].quantity += quantity
 
-                // Calculate employee revenue
+                // Revenue by Employee
                 if (!employeeRevenueMap.has(empId)) {
                     employeeRevenueMap.set(empId, {
                         _id: empId,
@@ -77,7 +78,7 @@ export const getShopAnalytics = async (req, res) => {
                 }
                 employeeRevenueMap.get(empId).revenue += amount
 
-                // Count employee selling points (total products sold)
+                // Selling Points (Qty Sold)
                 if (!employeePointsMap.has(empId)) {
                     employeePointsMap.set(empId, {
                         _id: empId,
@@ -91,11 +92,18 @@ export const getShopAnalytics = async (req, res) => {
 
         const products = Array.from(productMap.values())
         const employeeProductSales = Array.from(employeeMap.values())
-        const topProduct = products.sort((a, b) => b.totalSold - a.totalSold)[0] || null
-        const employeeRevenueList = Array.from(employeeRevenueMap.values())
-        const topEmployee = employeeRevenueList.sort((a, b) => b.revenue - a.revenue)[0] || null
 
-        // Sort by dynamic sellingPoints
+        // Top-selling product(s)
+        const maxProductSold = Math.max(...products.map(p => p.totalSold))
+        const topProduct = products.filter(p => p.totalSold === maxProductSold)
+        const topProductIds = topProduct.map(p => p._id)  // ✅ Return just IDs for frontend
+
+        // Top-selling employee(s) by revenue
+        const employeeRevenueList = Array.from(employeeRevenueMap.values())
+        const maxRevenue = Math.max(...employeeRevenueList.map(e => e.revenue))
+        const topEmployee = employeeRevenueList.filter(e => e.revenue === maxRevenue)
+
+        // Top 5 employees by quantity sold
         const topEmployees = Array.from(employeePointsMap.values())
             .sort((a, b) => b.sellingPoints - a.sellingPoints)
             .slice(0, 5)
@@ -107,6 +115,7 @@ export const getShopAnalytics = async (req, res) => {
             employeeProductSales,
             topEmployees,
             topProduct,
+            topProductIds,     // ✅ Frontend will use this
             topEmployee
         })
 
