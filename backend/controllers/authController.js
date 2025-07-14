@@ -28,7 +28,7 @@ export const registerOwner = async (req, res) => {
             return res.status(403).json({ message: 'Unauthorized to register as owner' });
         }
 
-        // Find or create the shop
+        // ✅ Find or create the shop
         let shop = await Shop.findOne({ name: shopName });
 
         if (!shop) {
@@ -36,13 +36,13 @@ export const registerOwner = async (req, res) => {
             shop = await Shop.create({ name: shopName, employeePassword: hashedPassword });
         }
 
-        // Check if user already exists with this username
+        // ✅ Ensure username is unique globally
         const existingUser = await User.findOne({ username });
         if (existingUser) {
             return res.status(400).json({ message: 'Username already taken' });
         }
 
-        // Create new owner
+        // ✅ Create new owner for this shop
         const user = await User.create({
             username,
             role: 'owner',
@@ -59,43 +59,51 @@ export const registerOwner = async (req, res) => {
 };
 
 
+
 // ✅ Employee Registration
 export const registerEmployee = async (req, res) => {
-    const { shopName, employeePassword, username } = req.body
+    const { shopName, employeePassword, username } = req.body;
 
     try {
+        // 🔍 Validate input
         if (!shopName || !employeePassword || !username) {
-            return res.status(400).json({ message: 'All fields are required' })
+            return res.status(400).json({ message: 'All fields are required: shopName, employeePassword, username' });
         }
 
-        const shop = await Shop.findOne({ name: shopName })
+        // 🔍 Find the shop
+        const shop = await Shop.findOne({ name: shopName });
         if (!shop) {
-            return res.status(403).json({ message: 'Invalid shop or password' })
+            return res.status(404).json({ message: 'Shop not found' });
         }
 
-        const isMatch = await bcrypt.compare(employeePassword, shop.employeePassword)
+        // 🔐 Validate employee password
+        const isMatch = await bcrypt.compare(employeePassword, shop.employeePassword);
         if (!isMatch) {
-            return res.status(403).json({ message: 'Invalid shop or password' })
+            return res.status(403).json({ message: 'Invalid shop or password' });
         }
 
-        const existingUser = await User.findOne({ username, shopId: shop._id })
+        // 🔍 Check if username already exists in this shop
+        const existingUser = await User.findOne({ username, shopId: shop._id });
         if (existingUser) {
-            return res.status(400).json({ message: 'Username already taken in this shop' })
+            return res.status(400).json({ message: 'Username already taken in this shop' });
         }
 
+        // ✅ Create employee
         const user = await User.create({
             username,
             role: 'employee',
             shopId: shop._id
-        })
+        });
 
-        const token = generateToken(user)
-        res.status(201).json({ token, user })
+        const token = generateToken(user);
+        res.status(201).json({ token, user });
+
     } catch (err) {
-        console.error("❌ registerEmployee error:", err.message)
-        res.status(500).json({ error: err.message })
+        console.error("❌ registerEmployee error:", err.message);
+        res.status(500).json({ error: 'Server error during registration' });
     }
-}
+};
+
 
 // ✅ Owner Login
 export const loginOwner = async (req, res) => {
