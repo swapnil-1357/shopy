@@ -6,7 +6,8 @@ import {
     getProductsBySection,
     sellProduct,
     restockProduct,
-    deleteProduct
+    deleteProduct,
+    deleteSection // ✅ added
 } from '../controllers/productController.js'
 
 import { verifyToken, requireRole } from '../middleware/authMiddleware.js'
@@ -15,10 +16,11 @@ const router = express.Router()
 
 // Owner-only routes
 router.post('/add-section', verifyToken, requireRole('owner'), addSection)
+router.delete('/delete-section', verifyToken, requireRole('owner'), deleteSection) // ✅ new route
 router.patch('/restock/:productId', verifyToken, requireRole('owner'), restockProduct)
 router.delete('/delete/:productId', verifyToken, requireRole('owner'), deleteProduct)
 
-// Both owner and employee can add products now (no role check)
+// Both owner and employee can add products
 router.post('/add-product', verifyToken, addProduct)
 
 // Shared routes (any logged-in user)

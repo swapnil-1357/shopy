@@ -6,6 +6,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import { motion } from 'framer-motion';
+import ProfileModal from '@/components/ProfileModal';
 
 const fetchSections = async ({ queryKey }) => {
     const [, shopId] = queryKey;
@@ -183,7 +184,8 @@ const EmployeeDashboard = () => {
             />
 
             <div className="p-6 max-w-6xl mx-auto">
-                <h1 className="text-2xl font-bold mb-6">Welcome, {user.username}</h1>
+                <h1 className="text-2xl font-bold mb-6">Welcome, {user.username},<ProfileModal /></h1>
+                
 
                 <div className="flex items-center mb-6 gap-4">
                     <select

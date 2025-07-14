@@ -22,6 +22,44 @@ export const addSection = async (req, res) => {
     }
 }
 
+
+// Delete section (Owner only)
+export const deleteSection = async (req, res) => {
+    const { shopId, sectionName } = req.body;
+    const user = req.user; // from verifyToken middleware
+
+    try {
+        if (!user || user.role !== 'owner') {
+            return res.status(403).json({ message: 'Unauthorized: Only owner can delete sections' });
+        }
+
+        const shop = await Shop.findById(shopId);
+        if (!shop) {
+            return res.status(404).json({ message: 'Shop not found' });
+        }
+
+        const sectionIndex = shop.sections.indexOf(sectionName);
+        if (sectionIndex === -1) {
+            return res.status(404).json({ message: 'Section not found in shop' });
+        }
+
+        // Remove the section
+        shop.sections.splice(sectionIndex, 1);
+        await shop.save();
+
+        // Optional: Remove products in that section
+        await Product.deleteMany({ shopId, section: sectionName });
+
+        res.json({
+            message: 'Section deleted successfully',
+            sections: shop.sections
+        });
+    } catch (err) {
+        console.error('❌ Error in deleteSection:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
+
 // Get sections (any logged-in user)
 export const getSections = async (req, res) => {
     try {

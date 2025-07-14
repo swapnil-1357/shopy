@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import api from '@/lib/axios'
 
 const AuthContext = createContext()
 
@@ -8,27 +9,38 @@ export function useAuth() {
     return context
 }
 
-export default function AuthProvider({ children }) {
+export function AuthProvider({ children }) {
     const [user, setUser] = useState(null)
     const [token, setToken] = useState(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        try {
-            const storedUser = JSON.parse(localStorage.getItem('user'))
-            const storedToken = localStorage.getItem('token')
+        const storedToken = localStorage.getItem('token')
+        const storedUser = JSON.parse(localStorage.getItem('user'))
 
-            if (storedUser && storedToken) {
-                setUser(storedUser)
-                setToken(storedToken)
-            }
-        } catch (error) {
-            localStorage.removeItem('user')
-            localStorage.removeItem('token')
-        } finally {
-            setLoading(false)
+        if (storedToken && storedUser) {
+            setToken(storedToken)
+            setUser(storedUser)
         }
+
+        setLoading(false)
     }, [])
+
+    // ⏫ Refresh user profile from backend
+    const refreshUser = async () => {
+        try {
+            const res = await api.get('/user/profile', {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            })
+
+            setUser(res.data)
+            localStorage.setItem('user', JSON.stringify(res.data))
+        } catch (err) {
+            console.error('❌ Failed to refresh user profile')
+        }
+    }
 
     const login = (userData, authToken) => {
         localStorage.setItem('user', JSON.stringify(userData))
@@ -45,7 +57,17 @@ export default function AuthProvider({ children }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!user && !!token, loading }}>
+        <AuthContext.Provider
+            value={{
+                user,
+                token,
+                login,
+                logout,
+                refreshUser,
+                isAuthenticated: !!user && !!token,
+                loading,
+            }}
+        >
             {children}
         </AuthContext.Provider>
     )
