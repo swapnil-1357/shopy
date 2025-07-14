@@ -254,7 +254,7 @@ const OwnerDashboard = () => {
         <div className="max-w-7xl mx-auto">
             <Navbar
                 appName="Shopy"
-                onAnalytics={() => navigate('/owner/analytics')}
+                onAnalytics={() => navigate('/analytics')}
                 onPendingCart={() => setShowPendingSalesModal(true)}
                 onLogout={handleLogout}
                 onAddSection={() => setShowAddSectionModal(true)}
