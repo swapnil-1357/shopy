@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes.js'
 import productRoutes from './routes/productRoutes.js'
 import analyticsRoutes from './routes/analyticsRoutes.js'
 import pendingSaleRoutes from './routes/pendingSaleRoutes.js'
+import userRoutes from './routes/userRoutes.js' // ✅ Profile routes
 
 dotenv.config()
 
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/pending-sales', pendingSaleRoutes)
+app.use('/api/user', userRoutes) // ✅ Mount profile routes
 
 const PORT = process.env.PORT || 5000
 

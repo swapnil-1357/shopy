@@ -17,6 +17,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner" 
 import api from '@/lib/axios' 
+import SectionDropdown from '@/components/SectionDropdown'
+import ProfileModal from '@/components/ProfileModal'
+
 
 const Loader = () => (
     <div className="flex justify-center items-center py-8">
@@ -120,6 +123,30 @@ const OwnerDashboard = () => {
             setLoadingProducts(false)
         }
     }
+    const handleDeleteSection = async (sectionName) => {
+        if (!window.confirm(`Delete section "${sectionName}"?`)) return;
+
+        const shopId = user?.shopId;
+        const token = localStorage.getItem('token');
+
+        try {
+            await axios.delete('/products/delete-section', {
+                data: { shopId, sectionName },
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            setSections(prev => prev.filter(sec => sec !== sectionName));
+            if (selectedSection === sectionName) {
+                setSelectedSection('');
+                localStorage.removeItem('selectedSection');
+            }
+
+            toast.success(`Section "${sectionName}" deleted`);
+        } catch (err) {
+            console.error('Delete error:', err);
+            toast.error(err.response?.data?.message || 'Failed to delete section');
+        }
+    };
 
     const fetchPendingSales = async () => {
         setLoadingPending(true)
@@ -261,17 +288,14 @@ const OwnerDashboard = () => {
                     <div className="flex items-center mb-4 gap-4">
                         {/* Left: Stylish Section Dropdown */}
                         <div className="flex items-center flex-1">
-                            <select
-                                className="border-2 border-blue-700 px-4 py-2 rounded-lg font-semibold text-blue-700 bg-white shadow focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                                value={selectedSection}
-                                onChange={e => setSelectedSection(e.target.value)}
-                            >
-                                <option value="">All Sections</option>
-                                {sections.map(sec => (
-                                    <option key={sec} value={sec}>{sec}</option>
-                                ))}
-                            </select>
+                            <SectionDropdown
+                                sections={sections}
+                                selectedSection={selectedSection}
+                                setSelectedSection={setSelectedSection}
+                                onDeleteSection={handleDeleteSection}
+                            />
                         </div>
+                        <ProfileModal />
                         {/* Middle: Search bar (centered, 40% width) */}
                         <div className="flex justify-center flex-1">
                             <div className="flex items-center w-[40vw] max-w-xl mx-auto">

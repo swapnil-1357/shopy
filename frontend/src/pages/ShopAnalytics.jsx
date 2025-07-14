@@ -44,26 +44,27 @@ const ShopAnalytics = () => {
         for (const [_, prodInfo] of Object.entries(emp.products || {})) {
             detailedRows.push({
                 employee: emp.username,
+                profilePicture: emp.profilePicture || '',
                 product: prodInfo.name,
                 quantity: prodInfo.quantity
             })
         }
     }
 
-    // Chart: Products bar
+    // Bar Chart: Products
     const productChartData = {
         labels: (data.products || []).map(p => p.name),
         datasets: [
             {
                 label: 'Quantity Sold',
                 data: (data.products || []).map(p => p.totalSold),
-                backgroundColor: 'rgba(59, 130, 246, 0.7)', // blue-500
+                backgroundColor: 'rgba(59, 130, 246, 0.7)',
                 borderRadius: 8
             }
         ]
     }
 
-    // Chart: Top sellers pie
+    // Pie Chart: Top Sellers
     const employeePieChartData = {
         labels: (data.topEmployees || []).map(e => e.username),
         datasets: [
@@ -110,10 +111,20 @@ const ShopAnalytics = () => {
                 <div className="border p-4 rounded shadow">
                     <h2 className="text-lg font-semibold mb-2">👤 Top Employee(s)</h2>
                     {Array.isArray(data.topEmployee) && data.topEmployee.length > 0 ? (
-                        <ul className="list-disc list-inside text-sm">
+                        <ul className="space-y-2">
                             {data.topEmployee.map((e, idx) => (
-                                <li key={idx}>
-                                    <strong>{e.username}</strong> — ₹ {e.revenue?.toFixed(2)}
+                                <li key={idx} className="flex items-center gap-3 text-sm">
+                                    <img
+                                        src={e.profilePicture || '/default-avatar.png'}
+                                        alt={e.username}
+                                        className="w-8 h-8 rounded-full object-cover border"
+                                    />
+                                    <div>
+                                        <div className="font-medium">{e.username}</div>
+                                        <div className="text-muted-foreground text-xs">
+                                            ₹ {e.revenue?.toFixed(2)}
+                                        </div>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -136,7 +147,7 @@ const ShopAnalytics = () => {
                 </div>
             </div>
 
-            {/* Detailed Sales Table */}
+            {/* 🧾 Detailed Sales Table */}
             <div className="border p-4 rounded shadow">
                 <h2 className="text-lg font-semibold mb-4">🧾 Detailed Sales</h2>
                 {detailedRows.length === 0 ? (
@@ -153,13 +164,46 @@ const ShopAnalytics = () => {
                         <tbody>
                             {detailedRows.map((row, index) => (
                                 <tr key={index} className="border-b hover:bg-gray-50">
-                                    <td className="py-1">{row.employee}</td>
+                                    <td className="py-1 flex items-center gap-2">
+                                        <img
+                                            src={row.profilePicture || '/default-avatar.png'}
+                                            alt={row.employee}
+                                            className="w-6 h-6 rounded-full object-cover border"
+                                        />
+                                        <span>{row.employee}</span>
+                                    </td>
                                     <td className="py-1">{row.product}</td>
                                     <td className="py-1">{row.quantity}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                )}
+            </div>
+
+            {/* 🧑‍💼 Employee List with Selling Points */}
+            <div className="border p-4 rounded shadow">
+                <h2 className="text-lg font-semibold mb-4">🧑‍💼 All Employees (by selling points)</h2>
+                {data.allEmployees?.length ? (
+                    <ul className="space-y-2">
+                        {data.allEmployees
+                            .sort((a, b) => b.sellingPoints - a.sellingPoints)
+                            .map((emp, idx) => (
+                                <li key={idx} className="flex items-center gap-3 text-sm">
+                                    <img
+                                        src={emp.profilePicture || '/default-avatar.png'}
+                                        alt={emp.username}
+                                        className="w-6 h-6 rounded-full object-cover border"
+                                    />
+                                    <span>{emp.username}</span>
+                                    <span className="ml-auto text-muted-foreground">
+                                        {emp.sellingPoints} pts
+                                    </span>
+                                </li>
+                            ))}
+                    </ul>
+                ) : (
+                    <p className="text-muted-foreground text-sm">No employees found</p>
                 )}
             </div>
         </div>

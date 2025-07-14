@@ -10,19 +10,6 @@ export const getShopAnalytics = async (req, res) => {
             .populate('items.productId')
             .populate('employeeId')
 
-        if (!completedSales.length) {
-            return res.status(200).json({
-                totalRevenue: 0,
-                totalItemsSold: 0,
-                products: [],
-                employeeProductSales: [],
-                topEmployees: [],
-                topProduct: [],
-                topProductIds: [],    // ✅ Include in empty state too
-                topEmployee: []
-            })
-        }
-
         let totalRevenue = 0
         let totalItemsSold = 0
         const productMap = new Map()
@@ -30,6 +17,7 @@ export const getShopAnalytics = async (req, res) => {
         const employeeRevenueMap = new Map()
         const employeePointsMap = new Map()
 
+        // 🧾 Process completed sales
         completedSales.forEach((sale) => {
             sale.items.forEach(({ productId, quantity, price }) => {
                 if (!productId) return
@@ -48,17 +36,20 @@ export const getShopAnalytics = async (req, res) => {
                 }
                 productMap.get(prodId).totalSold += quantity
 
-                const empId = sale.employeeId?._id?.toString()
+                const emp = sale.employeeId
+                const empId = emp?._id?.toString()
                 if (!empId) return
 
-                // Employee Product Sales Map
+                // 📦 Employee Product Map
                 if (!employeeMap.has(empId)) {
                     employeeMap.set(empId, {
                         _id: empId,
-                        username: sale.employeeId.username,
+                        username: emp.username,
+                        profilePicture: emp.profilePicture || '',
                         products: {}
                     })
                 }
+
                 const empData = employeeMap.get(empId)
                 if (!empData.products[prodId]) {
                     empData.products[prodId] = {
@@ -68,21 +59,23 @@ export const getShopAnalytics = async (req, res) => {
                 }
                 empData.products[prodId].quantity += quantity
 
-                // Revenue by Employee
+                // 💰 Revenue per employee
                 if (!employeeRevenueMap.has(empId)) {
                     employeeRevenueMap.set(empId, {
                         _id: empId,
-                        username: sale.employeeId.username,
+                        username: emp.username,
+                        profilePicture: emp.profilePicture || '',
                         revenue: 0
                     })
                 }
                 employeeRevenueMap.get(empId).revenue += amount
 
-                // Selling Points (Qty Sold)
+                // 🏅 Selling points (quantity sold)
                 if (!employeePointsMap.has(empId)) {
                     employeePointsMap.set(empId, {
                         _id: empId,
-                        username: sale.employeeId.username,
+                        username: emp.username,
+                        profilePicture: emp.profilePicture || '',
                         sellingPoints: 0
                     })
                 }
@@ -93,20 +86,37 @@ export const getShopAnalytics = async (req, res) => {
         const products = Array.from(productMap.values())
         const employeeProductSales = Array.from(employeeMap.values())
 
-        // Top-selling product(s)
-        const maxProductSold = Math.max(...products.map(p => p.totalSold))
-        const topProduct = products.filter(p => p.totalSold === maxProductSold)
-        const topProductIds = topProduct.map(p => p._id)  // ✅ Return just IDs for frontend
+        const maxProductSold = products.length > 0
+            ? Math.max(...products.map(p => p.totalSold))
+            : 0
 
-        // Top-selling employee(s) by revenue
+        const topProduct = products.filter(p => p.totalSold === maxProductSold)
+        const topProductIds = topProduct.map(p => p._id)
+
         const employeeRevenueList = Array.from(employeeRevenueMap.values())
-        const maxRevenue = Math.max(...employeeRevenueList.map(e => e.revenue))
+        const maxRevenue = employeeRevenueList.length > 0
+            ? Math.max(...employeeRevenueList.map(e => e.revenue))
+            : 0
+
         const topEmployee = employeeRevenueList.filter(e => e.revenue === maxRevenue)
 
-        // Top 5 employees by quantity sold
         const topEmployees = Array.from(employeePointsMap.values())
             .sort((a, b) => b.sellingPoints - a.sellingPoints)
             .slice(0, 5)
+
+        // ✅ Get ALL employees of the shop
+        const allShopEmployees = await User.find({ shopId, role: 'employee' }).select('username profilePicture _id')
+
+        const allEmployees = allShopEmployees.map(emp => {
+            const empId = emp._id.toString()
+            const pointsData = employeePointsMap.get(empId)
+            return {
+                _id: empId,
+                username: emp.username,
+                profilePicture: emp.profilePicture || '',
+                sellingPoints: pointsData?.sellingPoints || 0
+            }
+        })
 
         res.json({
             totalRevenue,
@@ -115,12 +125,13 @@ export const getShopAnalytics = async (req, res) => {
             employeeProductSales,
             topEmployees,
             topProduct,
-            topProductIds,     // ✅ Frontend will use this
-            topEmployee
+            topProductIds,
+            topEmployee,
+            allEmployees // ✅ frontend can use this to show full list with profile
         })
 
     } catch (err) {
-        console.error('getShopAnalytics error:', err)
+        console.error('❌ getShopAnalytics error:', err)
         res.status(500).json({ message: 'Analytics fetch failed', error: err.message })
     }
 }
