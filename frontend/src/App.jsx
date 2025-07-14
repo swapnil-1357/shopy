@@ -1,6 +1,7 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Toaster } from 'sonner'
+import { Toaster } from 'react-hot-toast';
+
 
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -13,8 +14,8 @@ import ProtectedRoute from './components/ProtectedRoute'
 const App = () => {
   return (
     <>
-      {/* ✅ Sonner Toaster for global toast notifications */}
-      <Toaster richColors />
+      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+
 
       <Routes>
         <Route path="/" element={<Navigate to="/login" />} />

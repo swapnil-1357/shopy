@@ -22,7 +22,7 @@ const pendingSaleSchema = new mongoose.Schema({
                 type: Number,
                 required: true
             },
-            priceAtTime: {
+            priceAtSale: { 
                 type: Number,
                 required: true
             }
@@ -46,12 +46,17 @@ const pendingSaleSchema = new mongoose.Schema({
     }
 })
 
+// ✅ Virtual: totalPrice (computed on the fly, not stored in DB)
 pendingSaleSchema.virtual('totalPrice').get(function () {
-    return this.items.reduce((sum, item) => sum + item.quantity * item.priceAtTime, 0)
-})
+    return this.items.reduce((sum, item) => sum + item.quantity * item.priceAtSale, 0); // ✅ Use priceAtSale
+});
 
+
+// Enable virtuals in JSON output
 pendingSaleSchema.set('toJSON', { virtuals: true })
 pendingSaleSchema.set('toObject', { virtuals: true })
+
+// 📈 Useful compound index for analytics queries
 pendingSaleSchema.index({ shopId: 1, status: 1 })
 
 const PendingSale = mongoose.model('PendingSale', pendingSaleSchema)

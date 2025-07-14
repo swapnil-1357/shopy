@@ -151,44 +151,46 @@ export const deleteProduct = async (req, res) => {
 
 // Sell product (Employee only)
 export const sellProduct = async (req, res) => {
-    const { productId, employeeId, quantitySold } = req.body
+    const { productId, employeeId, quantitySold } = req.body;
 
     try {
-        const product = await Product.findById(productId)
+        const product = await Product.findById(productId);
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' })
+            return res.status(404).json({ message: 'Product not found' });
         }
 
         if (product.quantity < quantitySold) {
-            return res.status(400).json({ message: 'Insufficient stock' })
+            return res.status(400).json({ message: 'Insufficient stock' });
         }
 
         // Decrease product quantity
-        product.quantity -= quantitySold
-        await product.save()
+        product.quantity -= quantitySold;
+        await product.save();
 
         // Find employee and log the sale
-        const employee = await User.findById(employeeId)
+        const employee = await User.findById(employeeId);
         if (!employee || employee.role !== 'employee') {
-            return res.status(404).json({ message: 'Employee not found or invalid role' })
+            return res.status(404).json({ message: 'Employee not found or invalid role' });
         }
 
         employee.sales.push({
             product: productId,
             quantity: quantitySold,
+            priceAtSale: product.price, // ✅ Record the price at the time of sale
             date: new Date()
-        })
-        await employee.save()
+        });
+        await employee.save();
 
         res.json({
             message: 'Product sold',
             remainingQuantity: product.quantity
-        })
+        });
     } catch (err) {
-        console.error('❌ Error in sellProduct:', err)
-        res.status(500).json({ message: 'Server error', error: err.message })
+        console.error('❌ Error in sellProduct:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
-}
+};
+
 // Update product price (Owner only)
 export const updateProductPrice = async (req, res) => {
     const { productId } = req.params;

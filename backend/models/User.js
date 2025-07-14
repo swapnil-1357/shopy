@@ -7,10 +7,12 @@ const userSchema = new mongoose.Schema({
     shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop' },
     about: { type: String, default: '' },
     profilePicture: { type: String, default: '' },
+
     sales: [
         {
             product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-            quantity: Number,
+            quantity: { type: Number, required: true },
+            priceAtSale: { type: Number, required: true }, // ✅ Capture price at time of sale
             date: { type: Date, default: Date.now }
         }
     ]

@@ -4,54 +4,55 @@ import User from '../models/User.js'
 
 // ✅ Create a pending sale
 export const createPendingSale = async (req, res) => {
-    const { shopId, items } = req.body
-    const employeeId = req.user.id
+    const { shopId, items } = req.body;
+    const employeeId = req.user.id;
 
     if (!shopId || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ message: 'Invalid request payload' })
+        return res.status(400).json({ message: 'Invalid request payload' });
     }
 
     try {
-        const validatedItems = []
+        const validatedItems = [];
 
         for (const { productId, quantity } of items) {
             if (!productId || !quantity || quantity <= 0) {
-                return res.status(400).json({ message: 'Invalid item in items array' })
+                return res.status(400).json({ message: 'Invalid item in items array' });
             }
 
-            const product = await Product.findById(productId)
+            const product = await Product.findById(productId);
             if (!product) {
-                return res.status(404).json({ message: `Product not found: ${productId}` })
+                return res.status(404).json({ message: `Product not found: ${productId}` });
             }
 
             if (product.quantity < quantity) {
-                return res.status(400).json({ message: `Insufficient stock for ${product.name}` })
+                return res.status(400).json({ message: `Insufficient stock for ${product.name}` });
             }
 
             if (product.price == null) {
-                return res.status(400).json({ message: `Product "${product.name}" has no price set` })
+                return res.status(400).json({ message: `Product "${product.name}" has no price set` });
             }
 
             validatedItems.push({
                 productId,
                 quantity,
-                priceAtTime: product.price,
-            })
+                priceAtSale: product.price, // ✅ Use correct field name here
+            });
         }
 
         const pendingSale = new PendingSale({
             employeeId,
             shopId,
             items: validatedItems,
-        })
+        });
 
-        await pendingSale.save()
-        res.status(201).json({ message: 'Sale request submitted', pendingSale })
+        await pendingSale.save();
+        res.status(201).json({ message: 'Sale request submitted', pendingSale });
     } catch (err) {
-        console.error('createPendingSale error:', err)
-        res.status(500).json({ message: 'Server error', error: err.message })
+        console.error('createPendingSale error:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
-}
+};
+
 
 // ✅ Get all pending sales for a shop
 export const getPendingSales = async (req, res) => {

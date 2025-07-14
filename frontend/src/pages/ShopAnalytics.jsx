@@ -38,7 +38,6 @@ const ShopAnalytics = () => {
 
     if (!data) return <div className="p-6">Loading analytics...</div>
 
-    // Flatten employee-product sales for table
     const detailedRows = []
     for (const emp of data.employeeProductSales || []) {
         for (const [_, prodInfo] of Object.entries(emp.products || {})) {
@@ -51,7 +50,6 @@ const ShopAnalytics = () => {
         }
     }
 
-    // Bar Chart: Products
     const productChartData = {
         labels: (data.products || []).map(p => p.name),
         datasets: [
@@ -64,7 +62,6 @@ const ShopAnalytics = () => {
         ]
     }
 
-    // Pie Chart: Top Sellers
     const employeePieChartData = {
         labels: (data.topEmployees || []).map(e => e.username),
         datasets: [
@@ -85,10 +82,16 @@ const ShopAnalytics = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="border p-4 rounded shadow">
                     <h2 className="text-lg font-semibold mb-2">Total Revenue</h2>
-                    <p className="text-2xl font-bold">
-                        ₹ {(data.totalRevenue ?? 0).toFixed(2)}
+                    <p className="text-2xl font-bold text-green-600">
+                        ₹ {new Intl.NumberFormat('en-IN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        }).format(data.totalRevenue ?? 0)}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground italic">
+                        Based on price at time of sale
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
                         Total items sold: {data.totalItemsSold || 0}
                     </p>
                 </div>
@@ -122,7 +125,10 @@ const ShopAnalytics = () => {
                                     <div>
                                         <div className="font-medium">{e.username}</div>
                                         <div className="text-muted-foreground text-xs">
-                                            ₹ {e.revenue?.toFixed(2)}
+                                            ₹ {new Intl.NumberFormat('en-IN', {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            }).format(e.revenue ?? 0)} earned
                                         </div>
                                     </div>
                                 </li>
@@ -147,7 +153,7 @@ const ShopAnalytics = () => {
                 </div>
             </div>
 
-            {/* 🧾 Detailed Sales Table */}
+            {/* Detailed Sales Table */}
             <div className="border p-4 rounded shadow">
                 <h2 className="text-lg font-semibold mb-4">🧾 Detailed Sales</h2>
                 {detailedRows.length === 0 ? (
@@ -181,7 +187,7 @@ const ShopAnalytics = () => {
                 )}
             </div>
 
-            {/* 🧑‍💼 Employee List with Selling Points */}
+            {/* All Employees by Selling Points */}
             <div className="border p-4 rounded shadow">
                 <h2 className="text-lg font-semibold mb-4">🧑‍💼 All Employees (by selling points)</h2>
                 {data.allEmployees?.length ? (
