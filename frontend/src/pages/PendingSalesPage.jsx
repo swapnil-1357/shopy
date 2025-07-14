@@ -48,19 +48,19 @@ const PendingSalesPage = () => {
                     {pendingSales.map((sale) => (
                         <div key={sale._id} className="border p-4 rounded shadow-sm">
                             <p className="text-sm text-muted-foreground mb-1">
-                                Employee: <b>{sale.employeeId?.username}</b>
+                                Employee: <b>{sale.employeeId?.username || 'Unknown'}</b>
                             </p>
                             <p className="text-sm text-muted-foreground mb-2">
                                 Created: {new Date(sale.createdAt).toLocaleString()}
                             </p>
                             <ul className="list-disc ml-4 mb-3">
-                                {sale.items.map((item) => (
-                                    <li key={item.productId._id}>
-                                        {item.productId.name} × {item.quantity}
+                                {sale.items.map((item, idx) => (
+                                    <li key={item.productId?._id || idx}>
+                                        {(item.productId?.name || 'Unknown Product')} × {item.quantity}
                                     </li>
                                 ))}
                             </ul>
-                            {user._id === sale.employeeId._id ? (
+                            {user._id === sale.employeeId?._id ? (
                                 <Button onClick={() => confirmSale(sale._id)}>
                                     Confirm Sale
                                 </Button>
