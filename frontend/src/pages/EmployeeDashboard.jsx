@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext'
 import axios from '@/lib/axios'
 import { Button } from '@/components/ui/button'
 import Navbar from '@/components/Navbar'
-
+import { motion } from "framer-motion";
 const EmployeeDashboard = () => {
     const { user, logout } = useAuth()
     const navigate = useNavigate()
@@ -209,101 +209,71 @@ const EmployeeDashboard = () => {
                 </div>
 
                 {/* Product Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {products
-                        .filter(product =>
-                            product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-                            (priceFilter ? product.price <= Number(priceFilter) : true) &&
-                            (quantityFilter ? product.quantity >= Number(quantityFilter) : true)
-                        )
-                        .map(product => (
-                            <div
-                                key={product._id}
-                                className="border p-4 rounded shadow hover:shadow-lg transition"
-                            >
-                                <img
-                                    src={product.imageUrl}
-                                    alt={product.name}
-                                    className="w-full h-40 object-cover rounded mb-2"
-                                />
-                                <h3 className="text-lg font-semibold">{product.name}</h3>
-                                <p className="text-muted-foreground text-sm">{product.description}</p>
-                                <p className="text-sm">Price: ₹{product.price}</p>
-                                <p className="text-sm">Stock Left: {product.quantity}</p>
-                                <Button
-                                    className="mt-2 w-full"
-                                    onClick={() => addToCart(product)}
-                                    disabled={product.quantity <= 0}
+
+                <section>
+                    <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
+                        Products
+                    </h2>
+                    <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                            hidden: { opacity: 0, y: 20 },
+                            visible: {
+                                opacity: 1,
+                                y: 0,
+                                transition: {
+                                    staggerChildren: 0.1,
+                                },
+                            },
+                        }}
+                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                    >
+                        {products
+                            .filter(product =>
+                                product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                                (priceFilter ? product.price <= Number(priceFilter) : true) &&
+                                (quantityFilter ? product.quantity >= Number(quantityFilter) : true)
+                            )
+                            .map(product => (
+                                <motion.div
+                                    key={product._id}
+                                    whileHover={{ scale: 1.03 }}
+                                    className="border rounded-2xl shadow-sm hover:shadow-lg p-4 flex flex-col transition duration-300 bg-white"
                                 >
-                                    {product.quantity > 0 ? 'Add to Cart' : 'Out of Stock'}
-                                </Button>
-                            </div>
-                        ))}
-                </div>
-
-                {/* Cart Section */}
-                {/* <div className="mt-10 border-t pt-6" ref={cartRef} id="cart-section">
-                    <h2 className="text-xl font-bold mb-4">🛒 Your Cart</h2>
-
-                    {cart.length === 0 ? (
-                        <p className="text-muted-foreground">No items in cart</p>
-                    ) : (
-                        <>
-                            <ul className="space-y-4">
-                                {cart.map(item => (
-                                    <li
-                                        key={item._id}
-                                        className="flex items-center justify-between border rounded-lg p-4 shadow-sm"
-                                    >
-                                        <div className="flex items-center space-x-4">
+                                    <div className="mb-4 h-48 overflow-hidden rounded-xl">
+                                        {product.imageUrl ? (
                                             <img
-                                                src={item.imageUrl || 'https://via.placeholder.com/64?text=Item'}
-                                                alt={item.name}
-                                                className="w-16 h-16 object-cover rounded-md border"
+                                                src={product.imageUrl}
+                                                alt={product.name}
+                                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 ease-in-out"
                                             />
-                                            <div>
-                                                <h3 className="font-semibold">{item.name}</h3>
-                                                <p className="text-sm text-gray-600">
-                                                    ₹{item.price} × {item.quantity} = ₹{item.price * item.quantity}
-                                                </p>
-                                                <div className="flex items-center space-x-2 mt-2">
-                                                    <button
-                                                        onClick={() => decrementQuantity(item._id)}
-                                                        className="px-2 py-1 border rounded hover:bg-gray-100"
-                                                        disabled={item.quantity <= 1}
-                                                    >
-                                                        –
-                                                    </button>
-                                                    <span className="px-2">{item.quantity}</span>
-                                                    <button
-                                                        onClick={() => incrementQuantity(item._id)}
-                                                        className="px-2 py-1 border rounded hover:bg-gray-100"
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full bg-gray-200 text-gray-500">
+                                                No Image
                                             </div>
-                                        </div>
-                                        <button
-                                            onClick={() => removeFromCart(item._id)}
-                                            className="text-red-500 hover:underline text-sm"
-                                        >
-                                            Remove
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
+                                        )}
+                                    </div>
+                                    <h3 className="font-semibold text-lg text-gray-800">{product.name}</h3>
+                                    <p className="text-gray-600 text-sm flex-grow mt-1">
+                                        {product.description || "No description available."}
+                                    </p>
+                                    <p className="mt-2 text-base font-medium text-gray-900">₹{product.price}</p>
+                                    <p className="text-sm text-gray-700">Stock Left: {product.quantity}</p>
+                                    <Button
+                                        className="mt-4 w-full"
+                                        onClick={() => addToCart(product)}
+                                        disabled={product.quantity <= 0}
+                                    >
+                                        {product.quantity > 0 ? "Add to Cart" : "Out of Stock"}
+                                    </Button>
+                                </motion.div>
+                            ))}
+                    </motion.div>
+                </section>
 
-                            <div className="mt-6 border-t pt-4 text-right space-y-1">
-                                <p className="font-medium">🧾 Total Items: {totalItems}</p>
-                                <p className="font-semibold text-lg">💰 Total Price: ₹{totalPrice}</p>
-                                <Button className="mt-2" onClick={placePendingSale}>
-                                    Submit Sale Request
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                </div> */}
+
+
             </div>
         </div>
     )

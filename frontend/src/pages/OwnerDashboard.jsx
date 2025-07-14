@@ -5,12 +5,24 @@ import axios from '../lib/axios'
 import Navbar from '@/components/Navbar'
 import AddSectionModal from '@/components/AddSectionModal'
 import AddProductModal from '@/components/AddProductModal'
+import { Trash2 } from "lucide-react"
+import {
+    Dialog,
+    DialogTrigger,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { toast } from "sonner" 
 
 const Loader = () => (
     <div className="flex justify-center items-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-700"></div>
     </div>
 );
+
 
 const OwnerDashboard = () => {
     const { user, logout } = useAuth()
@@ -27,7 +39,6 @@ const OwnerDashboard = () => {
     const [showPendingSalesModal, setShowPendingSalesModal] = useState(false)
     const [pendingSales, setPendingSales] = useState([])
     const [loadingPending, setLoadingPending] = useState(false)
-
     const [showStockModal, setShowStockModal] = useState(false)
     const [stockProductId, setStockProductId] = useState(null)
     const [stockChange, setStockChange] = useState('')
@@ -79,6 +90,30 @@ const OwnerDashboard = () => {
         }
     }
 
+
+    const handleDeleteProduct = async (productId) => {
+        try {
+            const res = await fetch(`/api/products/delete/${productId}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`, // or however you store auth
+                },
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) throw new Error(data.message || "Failed to delete product")
+
+            // Update local state (adjust based on how your state is structured)
+            setProducts(prev => prev.filter(p => p._id !== productId))
+
+            toast.success(data.message || "Product deleted")
+        } catch (err) {
+            console.error("❌ Delete error:", err)
+            toast.error(err.message || "Failed to delete product")
+        }
+    }
     const fetchProducts = async (section) => {
         setLoadingProducts(true)
         try {
@@ -302,6 +337,7 @@ const OwnerDashboard = () => {
                     <h2 className="text-2xl font-semibold mb-6 text-center">
                         Products in "{selectedSection || 'Select a section'}"
                     </h2>
+
                     {loadingProducts ? (
                         <Loader />
                     ) : filteredProducts.length === 0 ? (
@@ -311,8 +347,9 @@ const OwnerDashboard = () => {
                             {filteredProducts.map(({ _id, name, description, price, quantity, imageUrl }) => (
                                 <div
                                     key={_id}
-                                    className="border rounded-lg shadow-md p-4 flex flex-col"
+                                    className="relative border rounded-lg shadow-md p-4 flex flex-col bg-white"
                                 >
+                                    {/* Image */}
                                     <div
                                         className="cursor-pointer mb-4 h-48 overflow-hidden rounded"
                                         onClick={() => setModalImage(imageUrl)}
@@ -329,29 +366,58 @@ const OwnerDashboard = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <h3 className="font-semibold text-lg">{name}</h3>
-                                    <p className="text-gray-600 flex-grow">
-                                        {description || 'No description'}
+
+                                    {/* Product Info */}
+                                    <h3 className="font-semibold text-lg text-gray-800">{name}</h3>
+                                    <p className="text-gray-600 flex-grow text-sm">
+                                        {description || "No description"}
                                     </p>
-                                    <p className="mt-2 font-medium">${price.toFixed(2)}</p>
-                                    <p className="text-sm text-gray-700">Quantity: {quantity}</p>
+                                    <p className="mt-2 font-medium text-gray-900">₹{price.toFixed(2)}</p>
+                                    <p className="text-sm text-gray-700">Stock Left: {quantity}</p>
+
+                                    {/* Update Stock Button */}
                                     <button
                                         onClick={() => {
                                             setStockProductId(_id)
                                             setShowStockModal(true)
-                                            setStockChange('')
+                                            setStockChange("")
                                             setCurrentStock(quantity)
                                         }}
-                                        className="mt-3 text-blue-600 hover:underline self-start"
+                                        className="mt-3 text-blue-600 hover:underline self-start text-sm"
                                     >
                                         Update Stock
                                     </button>
+
+                                    {/* Delete Button (bottom-right) */}
+                                    <div className="absolute bottom-4 right-4">
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-800">
+                                                    <Trash2 size={20} />
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent>
+                                                <DialogHeader>
+                                                    <DialogTitle>Delete Product</DialogTitle>
+                                                </DialogHeader>
+                                                <p>Are you sure you want to delete <strong>{name}</strong>? This action cannot be undone.</p>
+                                                <DialogFooter className="mt-4">
+                                                    <Button variant="outline">Cancel</Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        onClick={() => handleDeleteProduct(_id)}
+                                                    >
+                                                        Confirm Delete
+                                                    </Button>
+                                                </DialogFooter>
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     )}
                 </section>
-
                 {/* Pending Sales Modal */}
                 {showPendingSalesModal && (
                     <div

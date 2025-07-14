@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Dialog } from '@headlessui/react'
 import { Button } from '@/components/ui/button'
-import { ShoppingCart, PlusCircle, LogOut, BarChart2 } from 'lucide-react'
+import { ShoppingCart, PlusCircle, LogOut, BarChart2, TimerReset } from 'lucide-react'
 
 const Navbar = ({
     appName = 'Shopy',
@@ -58,11 +58,11 @@ const Navbar = ({
                     )}
 
                     <Button variant="ghost" onClick={onAnalytics} title="Analytics">
-                        <BarChart2 size={22} />
+                        <BarChart2 size={32} />
                     </Button>
 
                     <Button variant="ghost" onClick={onPendingCart} title="Pending Cart">
-                        <ShoppingCart size={22} />
+                        <TimerReset size={32} />
                     </Button>
 
                     {role === 'employee' && (
