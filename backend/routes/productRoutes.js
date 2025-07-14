@@ -7,7 +7,8 @@ import {
     sellProduct,
     restockProduct,
     deleteProduct,
-    deleteSection // ✅ added
+    deleteSection ,
+    updateProductPrice // ✅ added
 } from '../controllers/productController.js'
 
 import { verifyToken, requireRole } from '../middleware/authMiddleware.js'
@@ -19,6 +20,7 @@ router.post('/add-section', verifyToken, requireRole('owner'), addSection)
 router.delete('/delete-section', verifyToken, requireRole('owner'), deleteSection) // ✅ new route
 router.patch('/restock/:productId', verifyToken, requireRole('owner'), restockProduct)
 router.delete('/delete/:productId', verifyToken, requireRole('owner'), deleteProduct)
+router.patch('/update-price/:productId', verifyToken, updateProductPrice)
 
 // Both owner and employee can add products
 router.post('/add-product', verifyToken, addProduct)

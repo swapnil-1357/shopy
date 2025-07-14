@@ -189,6 +189,32 @@ export const sellProduct = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: err.message })
     }
 }
+// Update product price (Owner only)
+export const updateProductPrice = async (req, res) => {
+    const { productId } = req.params;
+    const { newPrice } = req.body;
+    const user = req.user;
+
+    try {
+        if (!user || user.role !== 'owner') {
+            return res.status(403).json({ message: 'Unauthorized: Only owners can update price' });
+        }
+
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        product.price = newPrice;
+        await product.save();
+
+        res.json({ message: '✅ Price updated', updatedProduct: product });
+    } catch (err) {
+        console.error('❌ Error updating price:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
+
 
 // Restock product (Owner only)
 export const restockProduct = async (req, res) => {

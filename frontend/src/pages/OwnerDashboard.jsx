@@ -48,9 +48,13 @@ const OwnerDashboard = () => {
     const [stockChange, setStockChange] = useState('')
     const [currentStock, setCurrentStock] = useState(0)
 
+
     // Modal states
     const [showAddSectionModal, setShowAddSectionModal] = useState(false)
     const [showAddProductModal, setShowAddProductModal] = useState(false)
+    const [showPriceModal, setShowPriceModal] = useState(false);
+    const [priceProductId, setPriceProductId] = useState(null);
+    const [newPrice, setNewPrice] = useState('');
 
     const [searchTerm, setSearchTerm] = useState('')
     const [priceFilter, setPriceFilter] = useState('')
@@ -254,6 +258,42 @@ const OwnerDashboard = () => {
             alert('Failed to update stock')
         }
     }
+    const handlePriceUpdate = async () => {
+        const price = parseFloat(newPrice); // Use parseFloat for decimal prices
+
+        if (!priceProductId) {
+            return toast.error('Missing product ID');
+        }
+
+        if (isNaN(price) || price <= 0) {
+            return toast.error('Enter a valid price greater than 0');
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            await axios.patch(
+                `/products/update-price/${priceProductId}`,
+                { newPrice: price },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            toast.success('✅ Price updated successfully');
+            fetchProducts(selectedSection); // refresh product list
+        } catch (err) {
+            console.error('❌ Price update error:', err);
+            toast.error(err?.response?.data?.message || '❌ Failed to update price');
+        } finally {
+            // cleanup UI state
+            setShowPriceModal(false);
+            setNewPrice('');
+            setPriceProductId(null);
+        }
+    };
+
 
     const handleLogout = () => {
         logout()
@@ -403,6 +443,16 @@ const OwnerDashboard = () => {
                                         className="mt-3 text-blue-600 hover:underline self-start text-sm"
                                     >
                                         Update Stock
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setPriceProductId(_id);
+                                            setShowPriceModal(true);
+                                            setNewPrice(price);
+                                        }}
+                                        className="mt-2 text-green-600 hover:underline self-start text-sm"
+                                    >
+                                        Change Price
                                     </button>
 
                                     {/* Delete Button (bottom-right) */}
@@ -591,6 +641,56 @@ const OwnerDashboard = () => {
                     selectedSection={selectedSection}
                     user={user}
                 />
+                {showPriceModal && (
+                    <div
+                        className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+                        role="dialog"
+                        aria-modal="true"
+                        onClick={() => setShowPriceModal(false)}
+                    >
+                        <div
+                            className="bg-white rounded-lg max-w-md w-full p-6 relative"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h2 className="text-2xl font-semibold mb-4">Update Price</h2>
+                            <button
+                                onClick={() => setShowPriceModal(false)}
+                                className="absolute top-3 right-3 text-xl font-bold hover:text-red-500"
+                                aria-label="Close price modal"
+                            >
+                                &times;
+                            </button>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">New Price</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={newPrice}
+                                    onChange={(e) => setNewPrice(e.target.value)}
+                                    className="border px-3 py-2 rounded w-full focus:outline-none"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    onClick={() => setShowPriceModal(false)}
+                                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded font-medium hover:bg-gray-400 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handlePriceUpdate}  // ✅ Correct: pass the function reference
+                                    className="bg-green-600 text-white px-4 py-2 rounded font-medium hover:bg-green-700 transition"
+                                >
+                                    Update Price
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
             </div>
         </div>
     )
