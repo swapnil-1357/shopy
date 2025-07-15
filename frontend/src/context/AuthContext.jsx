@@ -24,7 +24,7 @@ export function AuthProvider({ children }) {
 
         const fetchUser = async () => {
             try {
-                const res = await api.get('/user/profile');
+                const res = await api.get('/user/profile', { withCredentials: true });
                 setUser(res.data);
             } catch (err) {
                 setUser(null);
@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
 
     const refreshUser = async () => {
         try {
-            const res = await api.get('/user/profile');
+            const res = await api.get('/user/profile', { withCredentials: true });
             setUser(res.data);
         } catch (err) {
             console.error('❌ Failed to refresh user profile');
