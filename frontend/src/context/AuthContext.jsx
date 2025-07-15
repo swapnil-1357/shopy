@@ -1,74 +1,76 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import api from '@/lib/axios'
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import api from '@/lib/axios';
 
-const AuthContext = createContext()
+const AuthContext = createContext();
 
 export function useAuth() {
-    const context = useContext(AuthContext)
-    if (!context) throw new Error('useAuth must be used within an AuthProvider')
-    return context
+    const context = useContext(AuthContext);
+    if (!context) throw new Error('useAuth must be used within an AuthProvider');
+    return context;
 }
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null)
-    const [token, setToken] = useState(null)
-    const [loading, setLoading] = useState(true)
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const location = useLocation(); // ✅ detect current route
 
     useEffect(() => {
-        const storedToken = localStorage.getItem('token')
-        const storedUser = JSON.parse(localStorage.getItem('user'))
-
-        if (storedToken && storedUser) {
-            setToken(storedToken)
-            setUser(storedUser)
+        // ❌ Skip fetch if on login/signup page
+        if (['/login', '/signup'].includes(location.pathname)) {
+            setLoading(false);
+            return;
         }
 
-        setLoading(false)
-    }, [])
+        const fetchUser = async () => {
+            try {
+                const res = await api.get('/user/profile');
+                setUser(res.data);
+            } catch (err) {
+                setUser(null);
+                console.warn('⚠️ User not authenticated');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    // ⏫ Refresh user profile from backend
+        fetchUser();
+    }, [location.pathname]);
+
     const refreshUser = async () => {
         try {
-            const res = await api.get('/user/profile', {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-            })
-
-            setUser(res.data)
-            localStorage.setItem('user', JSON.stringify(res.data))
+            const res = await api.get('/user/profile');
+            setUser(res.data);
         } catch (err) {
-            console.error('❌ Failed to refresh user profile')
+            console.error('❌ Failed to refresh user profile');
         }
-    }
+    };
 
-    const login = (userData, authToken) => {
-        localStorage.setItem('user', JSON.stringify(userData))
-        localStorage.setItem('token', authToken)
-        setUser(userData)
-        setToken(authToken)
-    }
+    const login = async () => {
+        await refreshUser();
+    };
 
-    const logout = () => {
-        localStorage.removeItem('user')
-        localStorage.removeItem('token')
-        setUser(null)
-        setToken(null)
-    }
+    const logout = async () => {
+        try {
+            await api.post('/auth/logout');
+        } catch (err) {
+            console.error('❌ Logout failed', err);
+        }
+        setUser(null);
+    };
 
     return (
         <AuthContext.Provider
             value={{
                 user,
-                token,
                 login,
                 logout,
                 refreshUser,
-                isAuthenticated: !!user && !!token,
+                isAuthenticated: !!user,
                 loading,
             }}
         >
             {children}
         </AuthContext.Provider>
-    )
+    );
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useCallback,useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import axios from '@/lib/axios';
@@ -10,25 +10,19 @@ import ProfileModal from '@/components/ProfileModal';
 
 const fetchSections = async ({ queryKey }) => {
     const [, shopId] = queryKey;
-    const res = await axios.get(`/products/sections/${shopId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
+    const res = await axios.get(`/products/sections/${shopId}`, { withCredentials: true });
     return res.data.sections;
 };
 
 const fetchProducts = async ({ queryKey }) => {
     const [, shopId, section] = queryKey;
-    const res = await axios.get(`/products/products/${shopId}/${section}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
+    const res = await axios.get(`/products/products/${shopId}/${section}`, { withCredentials: true });
     return res.data;
 };
 
 const fetchAnalytics = async ({ queryKey }) => {
     const [, shopId] = queryKey;
-    const res = await axios.get(`/analytics/shop/${shopId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
+    const res = await axios.get(`/analytics/shop/${shopId}`, { withCredentials: true });
     return {
         ...res.data,
         topProductIds: res.data.topProduct.map(p => p._id),
@@ -47,6 +41,9 @@ const EmployeeDashboard = () => {
         const saved = localStorage.getItem('employee_cart');
         return saved ? JSON.parse(saved) : [];
     });
+    useEffect(() => {
+        localStorage.setItem('employee_cart', JSON.stringify(cart));
+    }, [cart]);
 
     const { data: sections = [] } = useQuery({
         queryKey: ['sections', user?.shopId],
@@ -55,7 +52,6 @@ const EmployeeDashboard = () => {
         staleTime: Infinity,
     });
 
-    // Set default selected section when sections load
     useEffect(() => {
         if (sections.length > 0 && !selectedSection) {
             setSelectedSection(sections[0]);
@@ -87,9 +83,7 @@ const EmployeeDashboard = () => {
                 })),
             };
 
-            return axios.post('/pending-sales/create', payload, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-            });
+            return axios.post('/pending-sales/create', payload, { withCredentials: true });
         },
         onSuccess: () => {
             alert('Sale request submitted successfully ✅');
@@ -102,15 +96,10 @@ const EmployeeDashboard = () => {
         },
     });
 
-    const handleLogout = useCallback(() => {
-        localStorage.removeItem('employee_cart');
-        logout();
-        navigate('/login');
-    }, [logout, navigate]);
-
-    useEffect(() => {
-        localStorage.setItem('employee_cart', JSON.stringify(cart));
-    }, [cart]);
+    const handleLogout = async () => {
+        await logout();          // backend logout
+        navigate('/login');      // frontend redirect
+    };
 
     const addToCart = useCallback((product) => {
         setCart(prev => {

@@ -9,7 +9,7 @@ const Login = () => {
     const [formData, setFormData] = useState({
         shopName: '',
         username: '',
-        password: '', // used for both employeePassword or ownerPassword
+        password: '',
         role: 'owner',
     })
 
@@ -47,12 +47,11 @@ const Login = () => {
             const endpoint =
                 formData.role === 'owner' ? '/auth/login-owner' : '/auth/login-employee'
 
-            const res = await axios.post(endpoint, payload)
-            const { token, user } = res.data
+            // ✅ Ensure cookie (token) is accepted and stored by browser
+            await axios.post(endpoint, payload, { withCredentials: true })
 
-            login(user, token)
+            await login()
             alert('✅ Login successful')
-            navigate(user.role === 'owner' ? '/owner-dashboard' : '/employee-dashboard')
         } catch (err) {
             const status = err.response?.status
             const message = err.response?.data?.message || 'Login failed'
@@ -65,6 +64,7 @@ const Login = () => {
             setLoading(false)
         }
     }
+
 
     return (
         <div className="max-w-md mx-auto mt-20 p-6 border rounded-xl shadow">

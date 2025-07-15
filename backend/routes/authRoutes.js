@@ -1,16 +1,18 @@
-import express from 'express'
+import express from 'express';
 import {
     registerOwner,
     registerEmployee,
     loginOwner,
-    loginEmployee
-} from '../controllers/authController.js'
+    loginEmployee,
+    logout
+} from '../controllers/authController.js';
 
-const router = express.Router()
+const router = express.Router();
 
-router.post('/register-owner', registerOwner)
-router.post('/register-employee', registerEmployee)
-router.post('/login-owner', loginOwner)
-router.post('/login-employee', loginEmployee)
+router.post('/register-owner', registerOwner);
+router.post('/register-employee', registerEmployee);
+router.post('/login-owner', loginOwner);
+router.post('/login-employee', loginEmployee);
+router.post('/logout', logout);
 
-export default router
+export default router;
