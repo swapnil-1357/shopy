@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import axios from '../lib/axios'
@@ -15,8 +15,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner" 
-import api from '@/lib/axios' 
+import { toast } from "sonner"
 import SectionDropdown from '@/components/SectionDropdown'
 import ProfileModal from '@/components/ProfileModal'
 
@@ -48,8 +47,6 @@ const OwnerDashboard = () => {
     const [stockChange, setStockChange] = useState('')
     const [currentStock, setCurrentStock] = useState(0)
 
-
-    // Modal states
     const [showAddSectionModal, setShowAddSectionModal] = useState(false)
     const [showAddProductModal, setShowAddProductModal] = useState(false)
     const [showPriceModal, setShowPriceModal] = useState(false);
@@ -85,8 +82,9 @@ const OwnerDashboard = () => {
         setLoadingSections(true)
         try {
             const res = await axios.get(`/products/sections/${user.shopId}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                withCredentials: true
             })
+
             setSections(res.data.sections)
             if (!selectedSection && res.data.sections.length) {
                 setSelectedSection(res.data.sections[0])
@@ -98,15 +96,11 @@ const OwnerDashboard = () => {
         }
     }
 
-
     const handleDeleteProduct = async (productId) => {
         try {
-            const res = await api.delete(`/products/delete/${productId}`, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
+            const res = await axios.delete(`/products/delete/${productId}`, {
+                withCredentials: true
             })
-
             setProducts(prev => prev.filter(p => p._id !== productId))
             toast.success(res.data.message || 'Product deleted')
         } catch (err) {
@@ -114,11 +108,12 @@ const OwnerDashboard = () => {
             toast.error(err.response?.data?.message || 'Failed to delete product')
         }
     }
+
     const fetchProducts = async (section) => {
         setLoadingProducts(true)
         try {
             const res = await axios.get(`/products/products/${user.shopId}/${section}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                withCredentials: true
             })
             setProducts(res.data)
         } catch {
@@ -127,43 +122,40 @@ const OwnerDashboard = () => {
             setLoadingProducts(false)
         }
     }
+
     const handleDeleteSection = async (sectionName) => {
         if (!window.confirm(`Delete section "${sectionName}"?`)) return;
 
-        const shopId = user?.shopId;
-        const token = localStorage.getItem('token');
-
         try {
             await axios.delete('/products/delete-section', {
-                data: { shopId, sectionName },
-                headers: { Authorization: `Bearer ${token}` },
-            });
+                data: { shopId: user.shopId, sectionName },
+                withCredentials: true
+            })
 
-            setSections(prev => prev.filter(sec => sec !== sectionName));
+            setSections(prev => prev.filter(sec => sec !== sectionName))
             if (selectedSection === sectionName) {
-                setSelectedSection('');
-                localStorage.removeItem('selectedSection');
+                setSelectedSection('')
+                localStorage.removeItem('selectedSection')
             }
 
-            toast.success(`Section "${sectionName}" deleted`);
+            toast.success(`Section "${sectionName}" deleted`)
         } catch (err) {
-            console.error('Delete error:', err);
-            toast.error(err.response?.data?.message || 'Failed to delete section');
+            console.error('Delete error:', err)
+            toast.error(err.response?.data?.message || 'Failed to delete section')
         }
-    };
+    }
 
     const fetchPendingSales = async () => {
         setLoadingPending(true)
         try {
             const res = await axios.get(`/pending-sales/shop/${user.shopId}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                withCredentials: true
             })
 
             const flattenedSales = []
-
             if (Array.isArray(res.data)) {
                 res.data.forEach((sale) => {
-                    if (Array.isArray(sale.items) && sale.items.length > 0) {
+                    if (Array.isArray(sale.items)) {
                         sale.items.forEach((item, index) => {
                             flattenedSales.push({
                                 key: `${sale._id}-${item.productId?._id || index}`,
@@ -175,22 +167,12 @@ const OwnerDashboard = () => {
                                 createdAt: sale.createdAt,
                             })
                         })
-                    } else {
-                        flattenedSales.push({
-                            key: `${sale._id}-noitems`,
-                            saleId: sale._id,
-                            section: 'N/A',
-                            productName: 'N/A',
-                            quantity: 0,
-                            employeeName: sale.employeeId?.username || 'Unknown',
-                            createdAt: sale.createdAt,
-                        })
                     }
                 })
             }
 
             setPendingSales(flattenedSales)
-        } catch (err) {
+        } catch {
             alert('Failed to fetch pending sales')
         } finally {
             setLoadingPending(false)
@@ -201,7 +183,7 @@ const OwnerDashboard = () => {
         if (!window.confirm('Delete this pending sale?')) return
         try {
             await axios.delete(`/pending-sales/delete/${saleId}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                withCredentials: true
             })
             fetchPendingSales()
         } catch {
@@ -212,16 +194,12 @@ const OwnerDashboard = () => {
     const handleAddSection = async (sectionName) => {
         if (!sectionName.trim()) return alert('Section name cannot be empty')
         try {
-            await axios.post(
-                '/products/add-section',
-                {
-                    shopId: user.shopId,
-                    sectionName: sectionName.trim(),
-                },
-                {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                }
-            )
+            await axios.post('/products/add-section', {
+                shopId: user.shopId,
+                sectionName: sectionName.trim(),
+            }, {
+                withCredentials: true
+            })
             alert('Section added')
             fetchSections()
         } catch (err) {
@@ -230,24 +208,15 @@ const OwnerDashboard = () => {
     }
 
     const handleStockChange = async () => {
-        if (!stockProductId) return
         const change = Number(stockChange)
-        if (isNaN(change) || change === 0) {
-            alert('Enter a non-zero number')
-            return
-        }
-        if (change < 0 && currentStock + change < 0) {
-            alert('Stock cannot be negative')
-            return
-        }
+        if (!stockProductId || isNaN(change) || change === 0) return alert('Invalid input')
+
+        if (change < 0 && currentStock + change < 0) return alert('Stock cannot be negative')
+
         try {
-            await axios.patch(
-                `/products/restock/${stockProductId}`,
-                { quantity: change },
-                {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                }
-            )
+            await axios.patch(`/products/restock/${stockProductId}`, { quantity: change }, {
+                withCredentials: true
+            })
             alert('Stock updated')
             fetchProducts(selectedSection)
             setShowStockModal(false)
@@ -258,47 +227,32 @@ const OwnerDashboard = () => {
             alert('Failed to update stock')
         }
     }
+
     const handlePriceUpdate = async () => {
-        const price = parseFloat(newPrice); // Use parseFloat for decimal prices
-
-        if (!priceProductId) {
-            return toast.error('Missing product ID');
-        }
-
-        if (isNaN(price) || price <= 0) {
-            return toast.error('Enter a valid price greater than 0');
-        }
+        const price = parseFloat(newPrice)
+        if (!priceProductId || isNaN(price) || price <= 0) return toast.error('Enter valid price')
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.patch(
-                `/products/update-price/${priceProductId}`,
-                { newPrice: price },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
-
-            toast.success('✅ Price updated successfully');
-            fetchProducts(selectedSection); // refresh product list
+            await axios.patch(`/products/update-price/${priceProductId}`, { newPrice: price }, {
+                withCredentials: true
+            })
+            toast.success('✅ Price updated successfully')
+            fetchProducts(selectedSection)
         } catch (err) {
-            console.error('❌ Price update error:', err);
-            toast.error(err?.response?.data?.message || '❌ Failed to update price');
+            console.error('❌ Price update error:', err)
+            toast.error(err?.response?.data?.message || '❌ Failed to update price')
         } finally {
-            // cleanup UI state
-            setShowPriceModal(false);
-            setNewPrice('');
-            setPriceProductId(null);
+            setShowPriceModal(false)
+            setNewPrice('')
+            setPriceProductId(null)
         }
+    }
+
+    const handleLogout = async () => {
+        await logout();          // backend logout
+        navigate('/login');      // frontend redirect
     };
 
-
-    const handleLogout = () => {
-        logout()
-        navigate('/login')
-    }
 
     if (!user || user.role !== 'owner') return null
 
