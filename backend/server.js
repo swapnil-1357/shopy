@@ -2,32 +2,34 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import cookieParser from 'cookie-parser'; // ✅ Import cookie-parser
+import cookieParser from 'cookie-parser';
 
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import pendingSaleRoutes from './routes/pendingSaleRoutes.js';
-import userRoutes from './routes/userRoutes.js'; // ✅ Profile routes
+import userRoutes from './routes/userRoutes.js';
+import imageKitRoutes from './routes/imageKitRoutes.js'; // ✅ 1. Import the new route
 
 dotenv.config();
 
 const app = express();
 
-// ✅ Middleware
+// Middleware
 app.use(cors({
     origin: ['http://localhost:5173', 'https://shopy-roan.vercel.app'],
     credentials: true,
 }));
 app.use(express.json());
-app.use(cookieParser()); // ✅ Parse cookies from incoming requests
+app.use(cookieParser());
 
-// ✅ Routes
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/pending-sales', pendingSaleRoutes);
-app.use('/api/user', userRoutes); // ✅ Mount profile routes
+app.use('/api/user', userRoutes);
+app.use('/api/imagekit', imageKitRoutes); 
 
 const PORT = process.env.PORT || 5000;
 
